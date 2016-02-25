@@ -32,8 +32,8 @@ configuration=''
         }
 
         var testArgs = noParallelTestProjects.Contains(projectName) ? " -parallel none" : "";
-        var runnerFolder = Path.GetFullPath(Path.Combine(KoreBuildFolderPath, "build", "xunit.runner.console", "tools"));
-        var xunitCoreFolder = Path.GetFullPath(Path.Combine(KoreBuildFolderPath, "build", "xunit.core", "build", "_desktop"));
+        var runnerFolder = Path.GetFullPath(Path.Combine(KoreBuildFolderPath, "xunit.runner.console", "2.1.0", "tools"));
+        var xunitCoreFolder = Path.GetFullPath(Path.Combine(KoreBuildFolderPath, "xunit.core", "2.1.0", "build", "_desktop"));
 
         if (IsLinux)
         {
