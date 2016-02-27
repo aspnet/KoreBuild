@@ -13,7 +13,7 @@ $buildFolder = ".build"
 $buildFile="$buildFolder\KoreBuild.ps1"
 
 if (!(Test-Path $buildFolder)) {
-    Write-Host "Downloading KoreBuild"    
+    Write-Host "Downloading KoreBuild from $koreBuildZip"    
     
     $tempFolder=$env:TEMP + "\KoreBuild-" + [guid]::NewGuid()
     New-Item -Path "$tempFolder" -Type directory | Out-Null
