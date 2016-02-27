@@ -21,6 +21,7 @@ if (!(Test-Path $buildFolder)) {
     $localZipFile="$tempFolder\korebuild.zip"
     
     Invoke-WebRequest $koreBuildZip -OutFile $localZipFile
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory($localZipFile, $tempFolder)
     
     New-Item -Path "$buildFolder" -Type directory | Out-Null
