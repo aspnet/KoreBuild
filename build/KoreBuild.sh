@@ -30,7 +30,7 @@ koreBuildFolder="${koreBuildFolder/$repoFolder/}"
 koreBuildFolder="${koreBuildFolder#/}"
 
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=beta
-[ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=1.0.0.001496
+[ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=1.0.0.001540
 
 if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
     echo "Skipping runtime installation because KOREBUILD_SKIP_RUNTIME_INSTALL is set"
