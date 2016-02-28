@@ -15,8 +15,6 @@ default BUILD_DIR='${Path.Combine(TARGET_DIR, "build")}'
 default TEST_DIR='${Path.Combine(TARGET_DIR, "test")}'
 default Configuration='${E("Configuration")}'
 default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
-default DNX_TOOLS_FEED = 'https://www.myget.org/F/dnxtools/api/v3/index.json'
-default NUGET_FEED = 'https://api.nuget.org/v3/index.json'
 
 @{
   if (string.IsNullOrEmpty(E("DOTNET_BUILD_VERSION")))
@@ -157,14 +155,11 @@ default NUGET_FEED = 'https://api.nuget.org/v3/index.json'
   copy sourceDir='${Path.GetDirectoryName(project)}' include='bin/**/' outputDir='${Path.Combine(BUILD_DIR, Path.GetFileNameWithoutExtension(project))}' overwrite='${true}' each='var project in nativeProjects'
 
 #nuget-verify target='package' if='File.Exists(PACKAGELIST_JSON_FILENAME) && ShouldVerifyNupkgs' description='Verify if all the packages are generated properly'
-  var commandsDirectory = '${Path.Combine(BASE_DIR, "commands")}'
-  exec program='.build/NuGet.exe' commandline='install -ExcludeVersion -pre NuGetPackageVerifier -Source ${DNX_TOOLS_FEED} -out ${commandsDirectory}'
-  exec program='${Path.Combine(commandsDirectory, "NuGetPackageVerifier", "NuGetPackageVerifier.exe")}' commandline='"${BUILD_DIR}" "${Path.Combine(BASE_DIR, PACKAGELIST_JSON_FILENAME)}"'
   @{
-    if (Directory.Exists(commandsDirectory))
-    {
-      Directory.Delete(commandsDirectory, recursive: true);
-    }
+    var verifierDirectory = Directory.EnumerateDirectories(Path.Combine(KoreBuildFolderPath, "NuGetPackageVerifier")).First();
+    Exec(
+        Path.Combine(verifierDirectory, "NuGetPackageVerifier.exe"),
+        string.Format("\"{0} \" \"{1} \"", BUILD_DIR, Path.Combine(BASE_DIR, PACKAGELIST_JSON_FILENAME)));
   }
 
 #nuget-install target='install' description='Install NuGet packages to local repo'

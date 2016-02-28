@@ -55,7 +55,7 @@ else
 
 if (!(Test-Path "$koreBuildFolder\Sake")) 
 {
-    &dotnet restore "$koreBuildFolder\project.json" --packages "$koreBuildFolder"
+    &dotnet restore "$koreBuildFolder\project.json" --packages "$koreBuildFolder" -f https://www.myget.org/F/dnxtools/api/v3/index.json -v Minimal
 }
 
 $makeFilePath = "makefile.shade"
