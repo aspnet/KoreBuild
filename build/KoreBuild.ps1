@@ -55,7 +55,12 @@ else
 
 if (!(Test-Path "$koreBuildFolder\Sake")) 
 {
-    &dotnet restore "$koreBuildFolder\project.json" --packages "$koreBuildFolder" -f https://www.myget.org/F/dnxtools/api/v3/index.json -v Minimal
+    $toolsProject = "$koreBuildFolder\project.json"
+    &dotnet restore "$toolsProject" --packages "$koreBuildFolder" -v Minimal
+    # Rename the project after restore because we don't want it to be restore afterwards
+    mv "$toolsProject" "$toolsProject.norestore"
+    # We still nuget because dotnet doesn't have support for pushing packages
+    Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" -OutFile "$koreBuildFolder/nuget.exe"
 }
 
 $makeFilePath = "makefile.shade"
