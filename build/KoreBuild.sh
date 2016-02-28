@@ -74,7 +74,10 @@ echo "Using Reference Assemblies from: $DOTNET_REFERENCE_ASSEMBLIES_PATH"
 
 sakeFolder=$koreBuildFolder/Sake
 if [ ! -d $sakeFolder ]; then
-    dotnet restore "$koreBuildFolder/project.json" --packages "$koreBuildFolder"
+    toolsProject="$koreBuildFolder/project.json"
+    dotnet restore "$toolsProject" --packages "$koreBuildFolder" -v Minimal
+    # Rename the project after restore because we don't want it to be restore afterwards
+    mv "$toolsProject" "$toolsProject.norestore"
 fi
 
 makeFile="makefile.shade"
