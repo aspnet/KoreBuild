@@ -3,6 +3,7 @@ use namespace="System"
 use namespace="System.Globalization"
 use namespace="System.IO"
 use namespace="System.Linq"
+use namespace="System.Threading.Tasks"
 use import="BuildEnv"
 use import="Environment"
 use import="Files"
@@ -37,9 +38,12 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
 }
 
 #restore-npm-modules
-  -// Find all dirs that contain a package.json file
-  var npmDirs = '${GetDirectoriesContaining(Directory.GetCurrentDirectory(), "package.json")}'
-  npm npmCommand='install ${E("KOREBUILD_NPM_INSTALL_OPTIONS")}' each='var npmDir in npmDirs'
+  @{
+    // Find all dirs that contain a package.json file
+    var npmDirs = GetDirectoriesContaining(Directory.GetCurrentDirectory(), "package.json").ToArray();
+    var npmOptions = E("KOREBUILD_NPM_INSTALL_OPTIONS") ?? " --quiet";
+    Parallel.ForEach(npmDirs, npmDir => Npm("install " + npmOptions, npmDir));
+  }
 
 #restore-bower-components
   -// Find all dirs that contain a bower.json file
@@ -233,7 +237,7 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
   @{
     AddToE("KOREBUILD_DOTNET_RESTORE_OPTIONS", "--verbosity minimal");
     AddToE("KOREBUILD_BOWER_INSTALL_OPTIONS", "--quiet");
-    AddToE("KOREBUILD_NPM_INSTALL_OPTIONS", "--quiet");
+    AddToE("KOREBUILD_NPM_INSTALL_OPTIONS", "--silent");
     Quiet = true;
   }
 
@@ -381,6 +385,9 @@ macro name='Dnx' command='string' dnxDir='string' dnvmUse='string'
 
 macro name="DnxTest" projectFile='string' framework='string' configuration='string'
     dnx-test
+
+macro name='Npm' npmCommand='string' npmDir='string'
+    npm
 
 macro name="UpdateResx" resxFile='string'
     k-generate-resx
