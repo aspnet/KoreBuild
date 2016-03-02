@@ -41,4 +41,15 @@ functions
             return Environment.GetEnvironmentVariable("KOREBUILD_FOLDER"); 
         }
     }
-  }
+
+    bool IsTeamCity
+    {
+        get { return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEAMCITY_VERSION")); }
+    }
+
+    bool IsTravisCi
+    {
+        get { return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TRAVIS")) &&
+                !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CONTINUOUS_INTEGRATION")); }
+    }
+}
