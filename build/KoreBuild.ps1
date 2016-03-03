@@ -21,16 +21,19 @@ if ($env:KOREBUILD_DOTNET_VERSION)
 {
     $dotnetVersion = $env:KOREBUILD_DOTNET_VERSION
 }
+
+$dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\cli"
+$dotnetLocalInstallFolderBin = "$dotnetLocalInstallFolder\bin"
 if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1") 
 {
     Write-Host "Skipping runtime installation because KOREBUILD_SKIP_RUNTIME_INSTALL = 1"
 }
 else
 {
-    $dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\cli"
-    $dotnetLocalInstallFolderBin = "$dotnetLocalInstallFolder\bin"
     & "$koreBuildFolder\dotnet\install.ps1" -Channel $dotnetChannel -Version $dotnetVersion
-
+}
+if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolderBin))
+{
     Write-Host "Adding $dotnetLocalInstallFolderBin to PATH"
     $env:Path = "$dotnetLocalInstallFolderBin;$env:PATH"
 }
