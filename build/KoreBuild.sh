@@ -29,8 +29,14 @@ koreBuildFolder="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 koreBuildFolder="${koreBuildFolder/$repoFolder/}"
 koreBuildFolder="${koreBuildFolder#/}"
 
+if test `uname` = Darwin; then
+    version=$(<cli.version.darwin)
+else
+    version=$(<cli.version.unix)
+fi
+
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=beta
-[ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=1.0.0.001540
+[ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=version
 
 if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
     echo "Skipping runtime installation because KOREBUILD_SKIP_RUNTIME_INSTALL is set"
