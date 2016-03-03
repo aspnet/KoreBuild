@@ -18,7 +18,7 @@ if test ! -d $buildFolder; then
     
     localZipFile="$tempFolder/korebuild.zip"
     
-    wget -O $localZipFile $koreBuildZip 2>/dev/null || curl -o $localZipFile --location $koreBuildZip /dev/null
+    wget -O $localZipFile $koreBuildZip 2>/dev/null || curl -o $localZipFile --location $koreBuildZip 2>/dev/null
     unzip -q -d $tempFolder $localZipFile
   
     mkdir $buildFolder

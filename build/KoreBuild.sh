@@ -69,6 +69,12 @@ if [ ! -d $sakeFolder ]; then
     mv "$toolsProject" "$toolsProject.norestore"
 fi
 
+nugetPath="$koreBuildFolder/nuget.exe"
+if [ ! -f $nugetPath ]; then
+    nugetUrl="https://dist.nuget.org/win-x86-commandline/latest/nuget.exe"
+    wget -O $nugetPath $nugetUrl 2>/dev/null || curl -o $nugetPath --location $nugetUrl 2>/dev/null
+fi
+
 makeFile="makefile.shade"
 if [ ! -e $makeFile ]; then
     makeFile="$koreBuildFolder/shade/makefile.shade"
