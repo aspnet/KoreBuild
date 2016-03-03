@@ -34,14 +34,20 @@ koreBuildFolder="${koreBuildFolder#/}"
 
 if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
     echo "Skipping runtime installation because KOREBUILD_SKIP_RUNTIME_INSTALL is set"
+
+    # Add .NET installation directory to the path if it isn't yet included.
+    # Add to the _end_ in case preferred .NET CLI is not in the default location.
+    [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR/bin:"* ]] && export PATH="$PATH:$DOTNET_INSTALL_DIR/bin"
 else
     # Need to set this variable because by default the install script
     # requires sudo
     export DOTNET_INSTALL_DIR=~/.dotnet
-    export PATH=$DOTNET_INSTALL_DIR/bin:$PATH
     export KOREBUILD_FOLDER="$(dirname $koreBuildFolder)"
     chmod +x $koreBuildFolder/dotnet/install.sh
     $koreBuildFolder/dotnet/install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
+
+    # Add .NET installation directory to the path if it isn't yet included.
+    [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR/bin:"* ]] && export PATH="$DOTNET_INSTALL_DIR/bin:$PATH"
 fi
 
 # Probe for Mono Reference assemblies

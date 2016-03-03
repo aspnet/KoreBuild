@@ -27,15 +27,21 @@ $dotnetLocalInstallFolderBin = "$dotnetLocalInstallFolder\bin"
 if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1") 
 {
     Write-Host "Skipping runtime installation because KOREBUILD_SKIP_RUNTIME_INSTALL = 1"
+    if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolderBin))
+    {
+        # Add to the _end_ of the path in case preferred .NET CLI is not in the default location.
+        Write-Host "Adding $dotnetLocalInstallFolderBin to PATH"
+        $env:Path = "$env:PATH;$dotnetLocalInstallFolderBin"
+    }
 }
 else
 {
     & "$koreBuildFolder\dotnet\install.ps1" -Channel $dotnetChannel -Version $dotnetVersion
-}
-if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolderBin))
-{
-    Write-Host "Adding $dotnetLocalInstallFolderBin to PATH"
-    $env:Path = "$dotnetLocalInstallFolderBin;$env:PATH"
+    if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolderBin))
+    {
+        Write-Host "Adding $dotnetLocalInstallFolderBin to PATH"
+        $env:Path = "$dotnetLocalInstallFolderBin;$env:PATH"
+    }
 }
 
 if (!(Test-Path "$koreBuildFolder\Sake")) 
