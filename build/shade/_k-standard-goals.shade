@@ -381,12 +381,6 @@ macro name="DotnetTest" projectFile='string' configuration='string'
 macro name="XunitTest" projectFile='string' framework='string' configuration='string'
     xunit-test
 
-macro name='Dnx' command='string' dnxDir='string' dnvmUse='string'
-    dnx
-
-macro name="DnxTest" projectFile='string' framework='string' configuration='string'
-    dnx-test
-
 macro name='Npm' npmCommand='string' npmDir='string'
     npm
 

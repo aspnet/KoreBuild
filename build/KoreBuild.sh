@@ -42,17 +42,6 @@ else
     export KOREBUILD_FOLDER="$(dirname $koreBuildFolder)"
     chmod +x $koreBuildFolder/dotnet/install.sh
     $koreBuildFolder/dotnet/install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
-    # ==== Temporary ====
-    if ! type dnvm > /dev/null 2>&1; then
-        source $koreBuildFolder/dnvm/dnvm.sh
-    fi
-        if ! type dnx > /dev/null 2>&1 || [ -z "$SKIP_DNX_INSTALL" ]; then
-            dnvm install latest -runtime coreclr -alias default
-            dnvm install default -runtime mono -alias default
-        else
-        dnvm use default -runtime mono
-    fi
-    # ============
 fi
 
 # Probe for Mono Reference assemblies

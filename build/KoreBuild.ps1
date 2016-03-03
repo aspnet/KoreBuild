@@ -33,24 +33,6 @@ else
 
     Write-Host "Adding $dotnetLocalInstallFolderBin to PATH"
     $env:Path = "$dotnetLocalInstallFolderBin;$env:PATH"
-
-    # ==== Temporary =====
-    if ($env:SKIP_DNX_INSTALL -ne "1") 
-    {
-        $dnxVersion = "latest"
-        if ($env:BUILDCMD_DNX_VERSION) 
-        {
-            $dnxVersion = $env:BUILDCMD_DNX_VERSION
-        }
-
-        &"$koreBuildFolder\dnvm\dnvm.cmd" install $dnxVersion -runtime CoreCLR -arch x86 -alias default
-        &"$koreBuildFolder\dnvm\dnvm.cmd" install default -runtime CLR -arch x86 -alias default
-    }
-    else
-    {
-        &"$koreBuildFolder\dnvm\dnvm.cmd" use default -runtime CLR -arch x86
-    }
-    # ====================
 }
 
 if (!(Test-Path "$koreBuildFolder\Sake")) 
