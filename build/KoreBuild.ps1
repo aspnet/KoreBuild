@@ -10,8 +10,9 @@ cd $repoFolder
 $koreBuildFolder = $PSScriptRoot
 $koreBuildFolder = $koreBuildFolder.Replace($repoFolder, "").TrimStart("\")
 
+$dotnetVersionFile = $koreBuildFolder + "\cli.version.win"
 $dotnetChannel = "beta"
-$dotnetVersion = Get-Content $koreBuildFolder +"\"+cli.version.win
+$dotnetVersion = Get-Content $dotnetVersionFile
 
 if ($env:KOREBUILD_DOTNET_CHANNEL) 
 {
