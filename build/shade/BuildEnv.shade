@@ -42,6 +42,11 @@ functions
         }
     }
 
+    bool IsTeamCity
+    {
+        get { return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEAMCITY_VERSION")); }
+    }
+
     bool IsTravisCi
     {
         get { return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TRAVIS")) &&
