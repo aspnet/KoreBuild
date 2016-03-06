@@ -97,8 +97,41 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
 
 #build-compile target='compile' if='Directory.Exists("src")'
   @{
+    
+    Directory.CreateDirectory(TARGET_DIR);
+    
+    string commitHash = null;
+    if (AddAssemblyInfo)
+    {
+        var commitHashFile = Path.Combine(TARGET_DIR, "commit");
+        GitCommand("rev-parse HEAD >> " + commitHashFile);
+        commitHash = File.ReadAllLines(commitHashFile)[0];
+    }
+  
     var projectFiles = Files.Include("src/*/project.json").ToList();
-    projectFiles.ForEach(projectFile => DotnetPack(projectFile, BUILD_DIR, Configuration));
+    projectFiles.ForEach(projectFile => 
+    {
+        if (AddAssemblyInfo)
+        {
+            var projectText = File.ReadAllText(projectFile);
+            var project = (JsonObject)Json.Deserialize(projectText);
+            var isSharedProject = project.Keys.Contains("shared");
+            
+            // We don't want to embed the commit hash in it because 
+            // the consumers would get that file
+            if (!isSharedProject)
+            {
+                Console.WriteLine("Embedding commit hash in assembly");
+                var projectFolder = Path.GetDirectoryName(projectFile);
+                var commitHashAttribute = String.Format("[assembly: System.Reflection.AssemblyMetadata(\"CommitHash\", \"{0}\")]", commitHash);
+            
+                var buildInfoFile = Path.Combine(projectFolder, "BuildInfo.generated.cs");
+                File.WriteAllText(buildInfoFile, commitHashAttribute);
+            }
+        }
+        
+        DotnetPack(projectFile, BUILD_DIR, Configuration);
+    });
 
     foreach (var nupkg in Files.Include(Path.Combine(BUILD_DIR, "*/" + Configuration + "/*.nupkg")))
     {
@@ -337,6 +370,11 @@ functions @{
     {
       get { return E("KOREBUILD_BUILD_SRC_ONLY") == "1"; }
     }
+    
+    bool AddAssemblyInfo
+    {
+      get { return E("KOREBUILD_ADD_ASSEMBLY_INFO") == "1"; }
+    }
 }
 
 macro name='Exec' program='string' commandline='string'
@@ -386,3 +424,6 @@ macro name='Npm' npmCommand='string' npmDir='string'
 
 macro name="UpdateResx" resxFile='string'
     k-generate-resx
+
+macro name='GitCommand' gitCommand='string'
+    git
