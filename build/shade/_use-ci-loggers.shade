@@ -28,15 +28,25 @@ functions
         class TeamCityLogger : IBlockLogger, Sake.Engine.Logging.ILog
         {
             private Sake.Engine.ISakeSettings _settings;
+            private readonly string _messageFormat;
 
             public TeamCityLogger(Sake.Engine.ISakeSettings settings)
             {
                 _settings = settings;
+                var flowId = Environment.GetEnvironmentVariable("KOREBUILD_FLOWID");
+                if (!string.IsNullOrEmpty(flowId))
+                {
+                    _messageFormat = "##teamcity[message flowId='" + flowId + "' text='{0}' status='{1}']";
+                }
+                else
+                {
+                    _messageFormat = "##teamcity[message text='{0}' status='{1}']";
+                }
             }
 
             public void Info(object value)
             {
-                _settings.Output.WriteLine(value);
+                _settings.Output.WriteLine(Format(value, "NORMAL"));
             }
 
             public void Warn(object value)
@@ -51,10 +61,10 @@ functions
 
             public void Verbose(object value)
             {
-                _settings.Output.WriteLine(value);
+                _settings.Output.WriteLine(Format(value, "NORMAL"));
             }
 
-            public static string Format(object v, string level)
+            public string Format(object v, string level)
             {
                 if (v == null)
                 {
@@ -73,10 +83,11 @@ functions
                             .Replace("\n", "|n")
                             .Replace("]", "|]");
 
-                return string.Format(System.Globalization.CultureInfo.InvariantCulture,
-                                    "##teamcity[message text='{0}' status='{1}']",
-                                    value,
-                                    level);
+                return string.Format(
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    _messageFormat,
+                    value,
+                    level);
             }
 
             public void EndBlock(string name)
@@ -106,7 +117,7 @@ functions
                 _lastBlockName = name;
                 blockLogger.StartBlock(name);
            }
-           
+
            Log.Info("Run target: " + name);
         }
   }
