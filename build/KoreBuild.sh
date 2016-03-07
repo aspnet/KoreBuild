@@ -30,10 +30,12 @@ koreBuildFolder="${koreBuildFolder/$repoFolder/}"
 koreBuildFolder="${koreBuildFolder#/}"
 
 if test `uname` = Darwin; then
-    version=$(<cli.version.darwin)
+    versionFileName="cli.version.darwin"
 else
-    version=$(<cli.version.unix)
+    versionFileName="cli.version.unix"
 fi
+versionFile="$koreBuildFolder/$versionFileName"
+version=$(<$versionFile)
 
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=beta
 [ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
