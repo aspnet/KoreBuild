@@ -32,8 +32,7 @@ configuration=''
         }
 
         var testArgs = noParallelTestProjects.Contains(projectName) ? " -parallel none" : "";
-        var runnerFolder = Path.GetFullPath(Path.Combine(KoreBuildFolderPath, "xunit.runner.console", "2.1.0", "tools"));
-        var xunitCoreFolder = Path.GetFullPath(Path.Combine(KoreBuildFolderPath, "xunit.core", "2.1.0", "build", "_desktop"));
+        var runnerExe = Path.GetFullPath(Path.Combine(KoreBuildFolderPath, "xunit.runner.console", "2.1.0", "tools", "xunit.console.exe"));
 
         if (IsLinux)
         {
@@ -42,16 +41,9 @@ configuration=''
             testArgs = " -parallel none -noappdomain";
         }
 
-        var publishFolder = Path.Combine(projectFolder, "obj", "testPublish-" + framework);
-        DotnetPublish(projectFile, publishFolder, framework, configuration);
-
-        var runnerExe = "xunit.console.exe";
-        Copy(runnerFolder, publishFolder, "*.*", true);
-        Copy(xunitCoreFolder, publishFolder, "*.*", true);
-        var runnerFullPath = Path.GetFullPath(Path.Combine(publishFolder, runnerExe));
-
+        var publishFolder = Directory.EnumerateDirectories(Path.Combine(projectFolder, "bin", configuration, framework)).First();
         var targetTestDll = projectName + ".dll";
 
-        ExecClr(runnerFullPath, targetTestDll + " " + testArgs, publishFolder);
+        ExecClr(runnerExe, targetTestDll + " " + testArgs, publishFolder);
     }
 }
