@@ -174,8 +174,13 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
 
 #xunit-test target='test' if='Directory.Exists("test")'
   @{
-    var projectFiles = Files.Include("test/*/project.json");
-    foreach (var projectFile in projectFiles)
+    var projectFiles = Files.Include("test/*/project.json").ToArray();
+    var parallelOptions = new ParallelOptions
+    {
+        MaxDegreeOfParallelism = ExecuteParallel ? 8 : 1
+    };
+
+    Parallel.ForEach(projectFiles, parallelOptions, (projectFile, _) =>
     {
         var projectText = File.ReadAllText(projectFile);
         var project = (JsonObject)Json.Deserialize(projectText);
@@ -202,7 +207,7 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
                 XunitTest(projectFile, dnx451TFM, Configuration);
             }
        }
-    }
+    });
   }
 
 
@@ -243,9 +248,7 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
   }
 
 #--parallel
-   @{
-     Log.Warn("The --parallel flag is no longer supported. It will be ignored.");
-   }
+   @{ ExecuteParallel = true; }
 
 #--test-dnxcore
   @{
@@ -255,6 +258,7 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
 functions @{
     private static bool Quiet { get; set; }
     private static bool NoRestore { get; set; }
+    private static bool ExecuteParallel { get; set; }
 
     string E(string key) { return Environment.GetEnvironmentVariable(key); }
     void E(string key, string value) { Environment.SetEnvironmentVariable(key, value); }
