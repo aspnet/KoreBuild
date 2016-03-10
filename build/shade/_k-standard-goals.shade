@@ -41,7 +41,7 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
   @{
     // Find all dirs that contain a package.json file
     var npmDirs = GetDirectoriesContaining(Directory.GetCurrentDirectory(), "package.json").ToArray();
-    var npmOptions = E("KOREBUILD_NPM_INSTALL_OPTIONS") ?? " --quiet";
+    var npmOptions = E("KOREBUILD_NPM_INSTALL_OPTIONS") ?? "--quiet --depth 0";
     Parallel.ForEach(npmDirs, npmDir => Npm("install " + npmOptions, npmDir));
   }
 
@@ -276,7 +276,7 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
   @{
     AddToE("KOREBUILD_DOTNET_RESTORE_OPTIONS", "--verbosity minimal");
     AddToE("KOREBUILD_BOWER_INSTALL_OPTIONS", "--quiet");
-    AddToE("KOREBUILD_NPM_INSTALL_OPTIONS", "--silent");
+    AddToE("KOREBUILD_NPM_INSTALL_OPTIONS", "--quiet --depth 0 --progress false");
     Quiet = true;
   }
 
