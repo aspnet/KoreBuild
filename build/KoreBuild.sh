@@ -58,22 +58,9 @@ else
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR/bin:"* ]] && export PATH="$DOTNET_INSTALL_DIR/bin:$PATH"
 fi
 
-# Probe for Mono Reference assemblies
-if [ -z "$DOTNET_REFERENCE_ASSEMBLIES_PATH" ]; then
-    if [ $(uname) == Darwin ] && [ -d "/Library/Frameworks/Mono.framework/Versions/Current/lib/mono/xbuild-frameworks" ]; then
-        export DOTNET_REFERENCE_ASSEMBLIES_PATH="/Library/Frameworks/Mono.framework/Versions/Current/lib/mono/xbuild-frameworks"
-    elif [ -d "/usr/local/lib/mono/xbuild-frameworks" ]; then
-        export DOTNET_REFERENCE_ASSEMBLIES_PATH="/usr/local/lib/mono/xbuild-frameworks"
-    elif [ -d "/usr/lib/mono/xbuild-frameworks" ]; then
-        export DOTNET_REFERENCE_ASSEMBLIES_PATH="/usr/lib/mono/xbuild-frameworks"
-    fi
-fi
-
 if [ "$(uname)" == "Darwin" ]; then
     ulimit -n 2048
 fi
-
-echo "Using Reference Assemblies from: $DOTNET_REFERENCE_ASSEMBLIES_PATH"
 
 sakeFolder=$koreBuildFolder/Sake
 if [ ! -d $sakeFolder ]; then
