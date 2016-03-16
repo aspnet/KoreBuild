@@ -31,8 +31,6 @@ default configuration = 'Debug'
         projectBin = Path.Combine(projectBin, framework);
     }
 
-    DeleteFolder(projectBin);
-
     var dotnetArgs = string.Format("publish --configuration {0} {1} {2} {3}", configuration, frameworkArg, outputArg, projectFolder);
     Dotnet(dotnetArgs);
 }
