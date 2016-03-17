@@ -78,7 +78,7 @@ echo "Using Reference Assemblies from: $DOTNET_REFERENCE_ASSEMBLIES_PATH"
 sakeFolder=$koreBuildFolder/Sake
 if [ ! -d $sakeFolder ]; then
     toolsProject="$koreBuildFolder/project.json"
-    dotnet restore "$toolsProject" --packages "$koreBuildFolder" -f https://www.myget.org/F/dnxtools/api/v3/index.json -v Minimal
+    dotnet restore "$toolsProject" --packages "." -f https://www.myget.org/F/dnxtools/api/v3/index.json -v Minimal
     # Rename the project after restore because we don't want it to be restore afterwards
     mv "$toolsProject" "$toolsProject.norestore"
 fi
