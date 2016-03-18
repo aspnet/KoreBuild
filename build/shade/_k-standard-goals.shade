@@ -142,13 +142,13 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
 #build-test target='compile' if='Directory.Exists("test") && !BuildSrcOnly'
   @{
     var projectFiles = Files.Include("test/*/project.json").ToList();
-    projectFiles.ForEach(projectFile => DotnetBuild(projectFile, Configuration));
+    projectFiles.ForEach(projectFile => DotnetBuild(projectFile, Configuration, BuildFramework));
   }
 
 #build-samples target='compile' if='Directory.Exists("samples") && !BuildSrcOnly'
   @{
     var projectFiles = Files.Include("samples/*/project.json").ToList();
-    projectFiles.ForEach(projectFile => DotnetBuild(projectFile, Configuration));
+    projectFiles.ForEach(projectFile => DotnetBuild(projectFile, Configuration, BuildFramework));
   }
 
 #native-compile target='compile' if='!IsLinux && Directory.Exists(Path.Combine(BASE_DIR, "src"))'
@@ -219,6 +219,10 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
         var project = (JsonObject)Json.Deserialize(projectText);
         var configs = project.ValueAsJsonObject("frameworks");
         var targetFrameworks = configs == null ? new string[0] : configs.Keys;
+        if (!string.IsNullOrEmpty(BuildFramework))
+        {
+            targetFrameworks = targetFrameworks.Where(t => t.Equals(BuildFramework, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
 
         var net45TFM = targetFrameworks.FirstOrDefault(t => t.StartsWith("net45", StringComparison.OrdinalIgnoreCase));
         var dnx451TFM = targetFrameworks.FirstOrDefault(t => t.Equals("dnx451", StringComparison.OrdinalIgnoreCase));
@@ -379,6 +383,11 @@ functions @{
     {
       get { return E("KOREBUILD_ADD_ASSEMBLY_INFO") == "1"; }
     }
+
+    string BuildFramework
+    {
+      get { return E("KOREBUILD_BUILD_FRAMEWORK"); }
+    }
 }
 
 macro name='Exec' program='string' commandline='string'
@@ -408,7 +417,7 @@ macro name='Dotnet' command='string'
 macro name='Dotnet' command='string' dotnetDir='string'
     dotnet
 
-macro name="DotnetBuild" projectFile='string' configuration='string'
+macro name="DotnetBuild" projectFile='string' configuration='string' framework='string'
     dotnet-build
 
 macro name="DotnetPack" projectFile='string' dotnetPackOutputDir='string' configuration='string'
