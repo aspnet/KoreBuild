@@ -19,7 +19,7 @@ default targetPackagesDir=''
     var nugetExePath = Environment.GetEnvironmentVariable("PUSH_NUGET_EXE");
     if (string.IsNullOrEmpty(nugetExePath))
     {
-        nugetExePath = ".build/NuGet.exe";
+        nugetExePath = ".build/nuget.exe";
     }
     
     Parallel.ForEach(packages, package =>
