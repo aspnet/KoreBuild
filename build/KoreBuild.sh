@@ -45,17 +45,22 @@ if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
 
     # Add .NET installation directory to the path if it isn't yet included.
     # Add to the _end_ in case preferred .NET CLI is not in the default location.
-    [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR/bin:"* ]] && export PATH="$PATH:$DOTNET_INSTALL_DIR/bin"
+    [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR/bin:"* ]] && export PATH="$PATH:$DOTNET_INSTALL_DIR:$DOTNET_INSTALL_DIR/bin"
 else
     # Need to set this variable because by default the install script
     # requires sudo
     export DOTNET_INSTALL_DIR=~/.dotnet
     export KOREBUILD_FOLDER="$(dirname $koreBuildFolder)"
     chmod +x $koreBuildFolder/dotnet/install.sh
-    $koreBuildFolder/dotnet/install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
+
+    if [ ! -z "$KOREBUILD_DOTNET_CLI_NEW" ]; then
+        $koreBuildFolder/dotnet/install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
+    else
+        $koreBuildFolder/dotnet/install-old.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
+    fi
 
     # Add .NET installation directory to the path if it isn't yet included.
-    [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR/bin:"* ]] && export PATH="$DOTNET_INSTALL_DIR/bin:$PATH"
+    [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR/bin:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$DOTNET_INSTALL_DIR/bin:$PATH"
 fi
 
 if [ "$(uname)" == "Darwin" ]; then

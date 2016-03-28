@@ -13,6 +13,7 @@ $koreBuildFolder = $koreBuildFolder.Replace($repoFolder, "").TrimStart("\")
 $dotnetVersionFile = $koreBuildFolder + "\cli.version.win"
 $dotnetChannel = "beta"
 $dotnetVersion = Get-Content $dotnetVersionFile
+$dotnetCLINew = $env:KOREBUILD_DOTNET_CLI_NEW
 
 if ($env:KOREBUILD_DOTNET_CHANNEL) 
 {
@@ -25,16 +26,23 @@ if ($env:KOREBUILD_DOTNET_VERSION)
 
 $dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\cli"
 $dotnetLocalInstallFolderBin = "$dotnetLocalInstallFolder\bin"
-$newPath = "$dotnetLocalInstallFolderBin;$env:PATH"
+$newPath = "$dotnetLocalInstallFolder;$dotnetLocalInstallFolderBin;$env:PATH"
 if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1") 
 {
     Write-Host "Skipping runtime installation because KOREBUILD_SKIP_RUNTIME_INSTALL = 1"
     # Add to the _end_ of the path in case preferred .NET CLI is not in the default location.
-    $newPath = "$env:PATH;$dotnetLocalInstallFolderBin"
+    $newPath = "$env:PATH;$dotnetLocalInstallFolder;$dotnetLocalInstallFolderBin"
 }
 else
 {
-    & "$koreBuildFolder\dotnet\install.ps1" -Channel $dotnetChannel -Version $dotnetVersion
+    if ($dotnetCLINew)
+    {
+        & "$koreBuildFolder\dotnet\install.ps1" -Channel $dotnetChannel -Version $dotnetVersion
+    }
+    else
+    {
+        & "$koreBuildFolder\dotnet\install-old.ps1" -Channel $dotnetChannel -Version $dotnetVersion
+    }
 }
 if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolderBin))
 {
