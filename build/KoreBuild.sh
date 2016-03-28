@@ -24,9 +24,10 @@ fi
 echo "Building $repoFolder"
 cd $repoFolder
 
+scriptRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # Make the path relative to the repo root because Sake/Spark doesn't support full paths
-koreBuildFolder="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-koreBuildFolder="${koreBuildFolder/$repoFolder/}"
+koreBuildFolder="${scriptRoot/$repoFolder/}"
 koreBuildFolder="${koreBuildFolder#/}"
 
 if test `uname` = Darwin; then
@@ -70,7 +71,7 @@ fi
 sakeFolder=$koreBuildFolder/Sake
 if [ ! -d $sakeFolder ]; then
     toolsProject="$koreBuildFolder/project.json"
-    dotnet restore "$toolsProject" --packages "." -f https://www.myget.org/F/dnxtools/api/v3/index.json -v Minimal
+    dotnet restore "$toolsProject" --packages $scriptRoot -f https://www.myget.org/F/dnxtools/api/v3/index.json -v Minimal
     # Rename the project after restore because we don't want it to be restore afterwards
     mv "$toolsProject" "$toolsProject.norestore"
 fi
