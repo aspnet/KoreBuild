@@ -24,8 +24,16 @@ if ($env:KOREBUILD_DOTNET_VERSION)
     $dotnetVersion = $env:KOREBUILD_DOTNET_VERSION
 }
 
-$dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\cli"
-$dotnetLocalInstallFolderBin = "$dotnetLocalInstallFolder\bin"
+if ($dotnetCLINew)
+{
+    $dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\"
+    $dotnetLocalInstallFolderBin = $dotnetLocalInstallFolder
+}
+else
+{
+    $dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\cli"
+    $dotnetLocalInstallFolderBin = "$dotnetLocalInstallFolder\bin"
+}
 $newPath = "$dotnetLocalInstallFolder;$dotnetLocalInstallFolderBin;$env:PATH"
 if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1") 
 {
@@ -38,9 +46,6 @@ else
     if ($dotnetCLINew)
     {
         & "$koreBuildFolder\dotnet\install.ps1" -Channel $dotnetChannel -Version $dotnetVersion
-        # wokaround for CLI issue: https://github.com/dotnet/cli/issues/2143
-        $sharedPath = (Join-Path (Split-Path ((get-command dotnet.exe).Path) -Parent) "shared");
-        (Get-ChildItem $sharedPath -Recurse *dotnet.exe) | %{ $_.FullName } | Remove-Item;
     }
     else
     {
@@ -52,7 +57,12 @@ if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolderBin))
     Write-Host "Adding $dotnetLocalInstallFolderBin to PATH"
     $env:Path = "$newPath"
 }
-
+if ($dotnetCLINew)
+{
+    # wokaround for CLI issue: https://github.com/dotnet/cli/issues/2143
+    $sharedPath = (Join-Path (Split-Path ((get-command dotnet.exe).Path) -Parent) "shared");
+    (Get-ChildItem $sharedPath -Recurse *dotnet.exe) | %{ $_.FullName } | Remove-Item;
+}
 if (!(Test-Path "$koreBuildFolder\Sake")) 
 {
     $toolsProject = "$koreBuildFolder\project.json"
