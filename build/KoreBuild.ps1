@@ -38,6 +38,9 @@ else
     if ($dotnetCLINew)
     {
         & "$koreBuildFolder\dotnet\install.ps1" -Channel $dotnetChannel -Version $dotnetVersion
+        # wokaround for CLI issue: https://github.com/dotnet/cli/issues/2143
+        $sharedPath = (Join-Path (Split-Path ((get-command dotnet.exe).Path) -Parent) "shared");
+        (Get-ChildItem $sharedPath -Recurse *dotnet.exe) | %{ $_.FullName } | Remove-Item;
     }
     else
     {
