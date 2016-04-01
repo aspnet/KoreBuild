@@ -68,7 +68,10 @@ if [ ! -z "$KOREBUILD_DOTNET_CLI_NEW" ]; then
     # workaround for CLI issue: https://github.com/dotnet/cli/issues/2143
     DOTNET_PATH=`which dotnet | head -n 1`
     ROOT_PATH=`dirname $DOTNET_PATH`
-    find $ROOT_PATH/shared -name dotnet | xargs -r rm
+    FOUND=`find $ROOT_PATH/shared -name dotnet`
+    if [ ! -z "$FOUND" ]; then
+        echo $FOUND | xargs rm
+    fi
 fi
 
 if [ "$(uname)" == "Darwin" ]; then
