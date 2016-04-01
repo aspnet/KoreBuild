@@ -64,6 +64,13 @@ else
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR/bin:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$DOTNET_INSTALL_DIR/bin:$PATH"
 fi
 
+if [ ! -z "$KOREBUILD_DOTNET_CLI_NEW" ]; then
+    # workaround for CLI issue: https://github.com/dotnet/cli/issues/2143
+    DOTNET_PATH=`which dotnet | head -n 1`
+    ROOT_PATH=`dirname $DOTNET_PATH`
+    find $ROOT_PATH/shared -name dotnet | xargs -r rm
+fi
+
 if [ "$(uname)" == "Darwin" ]; then
     ulimit -n 2048
 fi
