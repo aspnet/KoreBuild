@@ -45,7 +45,7 @@ else
 {
     if ($dotnetCLINew)
     {
-        & "$koreBuildFolder\dotnet\install.ps1" -Channel $dotnetChannel -Version $dotnetVersion
+        & "$koreBuildFolder\dotnet\install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
     }
     else
     {
