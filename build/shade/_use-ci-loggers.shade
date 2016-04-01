@@ -102,10 +102,20 @@ functions
         }
 
         private string _lastBlockName;
-
+        private bool? _skipLoggingBlocks;
         public override void StartingTarget(string name)
         {
            base.StartingTarget(name);
+
+           if (_skipLoggingBlocks == null)
+           {
+               _skipLoggingBlocks = Environment.GetEnvironmentVariable("KOREBUILD_SKIP_BLOCK_LOGS") == "1";
+           }
+
+           if (_skipLoggingBlocks == true)
+           {
+               return;
+           }
 
            var blockLogger = Log as IBlockLogger;
            if (blockLogger != null)
