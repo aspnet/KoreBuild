@@ -1,7 +1,17 @@
 use namespace="System"
+use namespace="System.IO"
 
 functions
   @{
+    private static Lazy<bool> _isOSX = new Lazy<bool>(() => 
+        // Poor man's version for detecting if unix is Linux or Darwin.
+        // Can't use unsafe code because sake doesn't pass the right
+        // arguments for unsafe compilation
+        Directory.Exists("/Applications") &&
+        Directory.Exists("/System") &&
+        Directory.Exists("/Users") &&
+        Directory.Exists("/Volumes"));
+  
     string CreateDayBasedVersionNumber()
     {
         var start = new DateTime(2015, 1, 1);
@@ -51,5 +61,21 @@ functions
     {
         get { return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TRAVIS")) &&
                 !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CONTINUOUS_INTEGRATION")); }
+    }
+    
+    PlatformID OSPlatform 
+    {
+        get 
+        {
+            var platform = Environment.OSVersion.Platform;
+            
+            if (platform == PlatformID.Unix && 
+                _isOSX.Value)
+            {
+                platform = PlatformID.MacOSX;
+            }
+            
+            return platform;
+        }
     }
 }
