@@ -228,7 +228,8 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
         var dnx451TFM = targetFrameworks.FirstOrDefault(t => t.Equals("dnx451", StringComparison.OrdinalIgnoreCase));
         var dnxCore50TFM = targetFrameworks.FirstOrDefault(t => t.Equals("dnxcore50", StringComparison.OrdinalIgnoreCase));
         var netstandardAppTFM = targetFrameworks.FirstOrDefault(t => t.Equals("netstandardapp1.5", StringComparison.OrdinalIgnoreCase));
-        if ((netstandardAppTFM != null || dnxCore50TFM != null) && project.Keys.Contains("testRunner"))
+        var netCoreAppTFM = targetFrameworks.FirstOrDefault(t => t.Equals("netcoreapp1.0", StringComparison.OrdinalIgnoreCase));
+        if ((netstandardAppTFM != null || dnxCore50TFM != null || netCoreAppTFM != null) && project.Keys.Contains("testRunner"))
         {
             DotnetTest(projectFile, Configuration);
         }
