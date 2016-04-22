@@ -141,14 +141,12 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
 
 #build-test target='compile' if='Directory.Exists("test") && !BuildSrcOnly'
   @{
-    var projectFiles = Files.Include("test/*/project.json").ToList();
-    projectFiles.ForEach(projectFile => DotnetBuild(projectFile, Configuration, BuildFramework));
+    DotnetBuild("test/*/project.json", Configuration, BuildFramework);
   }
 
 #build-samples target='compile' if='Directory.Exists("samples") && !BuildSrcOnly'
   @{
-    var projectFiles = Files.Include("samples/*/project.json").ToList();
-    projectFiles.ForEach(projectFile => DotnetBuild(projectFile, Configuration, BuildFramework));
+    DotnetBuild("samples/*/project.json", Configuration, BuildFramework);
   }
 
 #native-compile target='compile' if='!IsLinux && Directory.Exists(Path.Combine(BASE_DIR, "src"))'
