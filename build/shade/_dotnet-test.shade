@@ -26,7 +26,7 @@ default configuration = 'Debug'
         noParallelTestProjects.UnionWith(NO_PARALLEL_TEST_PROJECTS.Split((char)','));
     }
 
-    var testArgs = " --configuration " + configuration;
+    var testArgs = " -f netcoreapp1.0 --configuration " + configuration;
     testArgs += noParallelTestProjects.Contains(projectName) || IsLinux ? " -parallel none" : "";
     Dotnet("test" + testArgs, projectFolder);
 }
