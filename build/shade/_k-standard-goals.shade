@@ -205,45 +205,11 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
 
 #xunit-test target='test' if='Directory.Exists("test")'
   @{
-    var projectFiles = Files.Include("test/*/project.json").ToArray();
-    var parallelOptions = new ParallelOptions
+    var projectFiles = Files.Include("test/*/project.json");
+    foreach (var projectFile in projectFiles)
     {
-        MaxDegreeOfParallelism = ExecuteParallel ? 8 : 1
-    };
-
-    Parallel.ForEach(projectFiles, parallelOptions, (projectFile, _) =>
-    {
-        var projectText = File.ReadAllText(projectFile);
-        var project = (JsonObject)Json.Deserialize(projectText);
-        var configs = project.ValueAsJsonObject("frameworks");
-        var targetFrameworks = configs == null ? new string[0] : configs.Keys;
-        if (!string.IsNullOrEmpty(BuildFramework))
-        {
-            targetFrameworks = targetFrameworks.Where(t => t.Equals(BuildFramework, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
-
-        var net45TFM = targetFrameworks.FirstOrDefault(t => t.StartsWith("net45", StringComparison.OrdinalIgnoreCase));
-        var dnx451TFM = targetFrameworks.FirstOrDefault(t => t.Equals("dnx451", StringComparison.OrdinalIgnoreCase));
-        var dnxCore50TFM = targetFrameworks.FirstOrDefault(t => t.Equals("dnxcore50", StringComparison.OrdinalIgnoreCase));
-        var netstandardAppTFM = targetFrameworks.FirstOrDefault(t => t.Equals("netstandardapp1.5", StringComparison.OrdinalIgnoreCase));
-        var netCoreAppTFM = targetFrameworks.FirstOrDefault(t => t.Equals("netcoreapp1.0", StringComparison.OrdinalIgnoreCase));
-        if ((netstandardAppTFM != null || dnxCore50TFM != null || netCoreAppTFM != null) && project.Keys.Contains("testRunner"))
-        {
-            DotnetTest(projectFile, Configuration);
-        }
-
-        if (project.Keys.Contains("testRunner"))
-        {
-            if (net45TFM != null)
-            {
-                XunitTest(projectFile, net45TFM, Configuration);
-            }
-            else if (dnx451TFM != null)
-            {
-                XunitTest(projectFile, dnx451TFM, Configuration);
-            }
-       }
-    });
+        DotnetTest(projectFile, Configuration);
+    }
   }
 
 
@@ -427,9 +393,6 @@ macro name="DotnetPublish" projectFile='string' outputFolder='string' framework=
 
 macro name="DotnetTest" projectFile='string' configuration='string'
     dotnet-test
-
-macro name="XunitTest" projectFile='string' framework='string' configuration='string'
-    xunit-test
 
 macro name='Npm' npmCommand='string' npmDir='string'
     npm
