@@ -15,9 +15,7 @@ default build_options=' ${E("KOREBUILD_DOTNET_BUILD_OPTIONS")}'
 default framework = null
 
 @{
-    var projectFolder=Path.GetDirectoryName(projectFile);
-
-    var dotnetArgs=string.Format("build{0} {1} --configuration {2}", build_options, projectFolder, configuration);
+    var dotnetArgs=string.Format("build{0} {1} --configuration {2}", build_options, projectFile, configuration);
 
     if (!string.IsNullOrEmpty(framework))
     {
