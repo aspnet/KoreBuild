@@ -27,21 +27,16 @@ functions
 
         class TeamCityLogger : IBlockLogger, Sake.Engine.Logging.ILog
         {
+            [ThreadStatic]
+            private static string FlowId;
+
             private Sake.Engine.ISakeSettings _settings;
             private readonly string _messageFormat;
 
             public TeamCityLogger(Sake.Engine.ISakeSettings settings)
             {
                 _settings = settings;
-                var flowId = Environment.GetEnvironmentVariable("KOREBUILD_FLOWID");
-                if (!string.IsNullOrEmpty(flowId))
-                {
-                    _messageFormat = "##teamcity[message flowId='" + flowId + "' text='{0}' status='{1}']";
-                }
-                else
-                {
-                    _messageFormat = "##teamcity[message text='{0}' status='{1}']";
-                }
+                _messageFormat = "##teamcity[message flowId='{2}' text='{0}' status='{1}']";
             }
 
             public void Info(object value)
@@ -87,17 +82,28 @@ functions
                     System.Globalization.CultureInfo.InvariantCulture,
                     _messageFormat,
                     value,
-                    level);
+                    level,
+                    GetFlowId());
             }
 
             public void EndBlock(string name)
             {
-                Console.WriteLine(string.Format("##teamcity[blockClosed name='{0}']", name));
+                Console.WriteLine(string.Format("##teamcity[blockClosed flowId='{0}' name='{1}']", GetFlowId(), name));
             }
 
             public void StartBlock(string name)
             {
-                Console.WriteLine(string.Format("##teamcity[blockOpened name='{0}']", name));
+                Console.WriteLine(string.Format("##teamcity[blockOpened flowId='{0}' name='{1}']", GetFlowId(), name));
+            }
+
+            private string GetFlowId()
+            {
+                if (string.IsNullOrEmpty(FlowId))
+                {
+                    FlowId = Environment.GetEnvironmentVariable("KOREBUILD_FLOWID") ??
+                        Process.GetCurrentProcess().Id.ToString();
+                }
+                return FlowId;
             }
         }
 
