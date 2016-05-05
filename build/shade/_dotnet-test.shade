@@ -15,7 +15,6 @@ configuration=''
 */}
 
 default configuration = 'Debug'
-default test_options=' ${E("KOREBUILD_DOTNET_TEST_OPTIONS")}'
 
 @{
     var content = File.ReadAllText(projectFile);
@@ -31,7 +30,7 @@ default test_options=' ${E("KOREBUILD_DOTNET_TEST_OPTIONS")}'
             noParallelTestProjects.UnionWith(NO_PARALLEL_TEST_PROJECTS.Split((char)','));
         }
 
-        var testArgs = test_options + " --configuration " + configuration;
+        var testArgs = " --configuration " + configuration;
         if (IsLinux)
         {
             testArgs += " -f netcoreapp1.0";
