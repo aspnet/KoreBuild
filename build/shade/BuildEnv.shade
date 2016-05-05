@@ -18,14 +18,40 @@ functions
         return version;
     }
 
+    private string _buildQuality;
+
+    string BuildQuality
+    {
+        get
+        {
+            if (_buildQuality == null)
+            {
+                var buildQualityFilePath = Path.Combine(KoreBuildFolderPath, "build-quality.txt");
+                _buildQuality = File.ReadAllText(buildQualityFilePath);
+            }
+
+            return _buildQuality;
+        }
+        set
+        {
+            _buildQuality = value;
+        }
+    }
+
     string BuildNumber
     {
         get
         {
-            return "t" + DateTime.UtcNow.ToString("yyMMddHHmmss");
+            var buildNumber = Environment.GetEnvironmentVariable("KOREBUILD_BUILD_NUMBER");
+            if (string.IsNullOrEmpty(buildNumber))
+            {
+                return "t" + DateTime.UtcNow.ToString("yyMMddHHmmss");
+            }
+
+            return BuildQuality + "-" + buildNumber;
         }
     }
-    
+
     string DotBuildFolderPath
     {
         get
@@ -33,12 +59,12 @@ functions
             return Environment.GetEnvironmentVariable("BUILD_FOLDER");
         }
     }
-    
+
     string KoreBuildFolderPath
     {
-        get 
-        { 
-            return Environment.GetEnvironmentVariable("KOREBUILD_FOLDER"); 
+        get
+        {
+            return Environment.GetEnvironmentVariable("KOREBUILD_FOLDER");
         }
     }
 
