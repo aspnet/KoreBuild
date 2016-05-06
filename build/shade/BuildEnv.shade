@@ -18,16 +18,18 @@ functions
         return version;
     }
 
+    private bool _buildQualitySet;
     private string _buildQuality;
 
     string BuildQuality
     {
         get
         {
-            if (_buildQuality == null)
+            if (!_buildQualitySet)
             {
                 var buildQualityFilePath = Path.Combine(KoreBuildFolderPath, "build-quality.txt");
                 _buildQuality = File.ReadAllText(buildQualityFilePath);
+                _buildQualitySet = true;
             }
 
             return _buildQuality;
@@ -35,6 +37,7 @@ functions
         set
         {
             _buildQuality = value;
+            _buildQualitySet = true;
         }
     }
 
@@ -48,7 +51,7 @@ functions
                 return "t" + DateTime.UtcNow.ToString("yyMMddHHmmss");
             }
 
-            return BuildQuality + "-" + buildNumber;
+            return !string.IsNullOrEmpty(BuildQuality) ? BuildQuality + "-" + buildNumber : buildNumber;
         }
     }
 
