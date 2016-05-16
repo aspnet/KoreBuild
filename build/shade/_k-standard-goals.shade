@@ -16,6 +16,9 @@ default BUILD_DIR='${Path.Combine(TARGET_DIR, "build")}'
 default TEST_DIR='${Path.Combine(TARGET_DIR, "test")}'
 default Configuration='${E("Configuration")}'
 default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
+default SRC_PROJECT_GLOB = "src/*/project.json"
+default TEST_PROJECT_GLOB = "test/*/project.json"
+default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
 
 @{
   if (string.IsNullOrEmpty(E("DOTNET_BUILD_VERSION")))
@@ -95,58 +98,71 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
 
 #ci-deep-clean .deep-clean target='clean' if='IsTeamCity'
 
-#build-compile target='compile' if='Directory.Exists("src")'
+#build-compile target='compile'
   @{
-    
-    Directory.CreateDirectory(TARGET_DIR);
-    
-    string commitHash = null;
-    if (AddAssemblyInfo)
+    var projectGlobs = new List<string>();
+    List<string> srcProjects = null;
+
+    if (Directory.Exists("src"))
     {
-        var commitHashFile = Path.Combine(TARGET_DIR, "commit");
-        GitCommand("rev-parse HEAD >> " + commitHashFile);
-        commitHash = File.ReadAllLines(commitHashFile)[0];
+      Directory.CreateDirectory(TARGET_DIR);
+
+      string commitHash = null;
+      if (AddAssemblyInfo)
+      {
+          var commitHashFile = Path.Combine(TARGET_DIR, "commit");
+          GitCommand("rev-parse HEAD >> " + commitHashFile);
+          commitHash = File.ReadAllLines(commitHashFile)[0];
+      }
+
+      srcProjects = Files.Include(SRC_PROJECT_GLOB).ToList();
+      srcProjects.ForEach(projectFile =>
+      {
+          if (AddAssemblyInfo)
+          {
+              var projectText = File.ReadAllText(projectFile);
+              var project = (JsonObject)Json.Deserialize(projectText);
+              var isSharedProject = project.Keys.Contains("shared");
+
+              // We don't want to embed the commit hash in it because 
+              // the consumers would get that file
+              if (!isSharedProject)
+              {
+                  Console.WriteLine("Embedding commit hash in assembly");
+                  var projectFolder = Path.GetDirectoryName(projectFile);
+                  var commitHashAttribute = String.Format("[assembly: System.Reflection.AssemblyMetadata(\"CommitHash\", \"{0}\")]", commitHash);
+
+                  var buildInfoFile = Path.Combine(projectFolder, "BuildInfo.generated.cs");
+                  File.WriteAllText(buildInfoFile, commitHashAttribute);
+              }
+          }
+      });
+
+      projectGlobs.Add(SRC_PROJECT_GLOB);
     }
-  
-    var projectFiles = Files.Include("src/*/project.json").ToList();
-    projectFiles.ForEach(projectFile => 
+    if (!BuildSrcOnly && Directory.Exists("test"))
     {
-        if (AddAssemblyInfo)
+        projectGlobs.Add(TEST_PROJECT_GLOB);
+    }
+    if (!BuildSrcOnly && Directory.Exists("samples"))
+    {
+        projectGlobs.Add(SAMPLES_PROJECT_GLOB);
+    }
+
+    DotnetBuild(string.Join(" ", projectGlobs.ToArray()), Configuration, BuildFramework);
+
+    if (srcProjects != null)
+    {
+        srcProjects.ForEach(projectFile =>
         {
-            var projectText = File.ReadAllText(projectFile);
-            var project = (JsonObject)Json.Deserialize(projectText);
-            var isSharedProject = project.Keys.Contains("shared");
-            
-            // We don't want to embed the commit hash in it because 
-            // the consumers would get that file
-            if (!isSharedProject)
-            {
-                Console.WriteLine("Embedding commit hash in assembly");
-                var projectFolder = Path.GetDirectoryName(projectFile);
-                var commitHashAttribute = String.Format("[assembly: System.Reflection.AssemblyMetadata(\"CommitHash\", \"{0}\")]", commitHash);
-            
-                var buildInfoFile = Path.Combine(projectFolder, "BuildInfo.generated.cs");
-                File.WriteAllText(buildInfoFile, commitHashAttribute);
-            }
+            DotnetPack(projectFile, BUILD_DIR, Configuration, " --no-build");
+        });
+
+        foreach (var nupkg in Files.Include(Path.Combine(BUILD_DIR, "*/" + Configuration + "/*.nupkg")))
+        {
+            File.Copy(nupkg, Path.Combine(BUILD_DIR, Path.GetFileName(nupkg)), true);
         }
-        
-        DotnetPack(projectFile, BUILD_DIR, Configuration);
-    });
-
-    foreach (var nupkg in Files.Include(Path.Combine(BUILD_DIR, "*/" + Configuration + "/*.nupkg")))
-    {
-        File.Copy(nupkg, Path.Combine(BUILD_DIR, Path.GetFileName(nupkg)), true);
     }
-  }
-
-#build-test target='compile' if='Directory.Exists("test") && !BuildSrcOnly'
-  @{
-    DotnetBuild("test/*/project.json", Configuration, BuildFramework);
-  }
-
-#build-samples target='compile' if='Directory.Exists("samples") && !BuildSrcOnly'
-  @{
-    DotnetBuild("samples/*/project.json", Configuration, BuildFramework);
   }
 
 #native-compile target='compile' if='!IsLinux && Directory.Exists(Path.Combine(BASE_DIR, "src"))'
@@ -208,13 +224,12 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
 
 #xunit-test target='test' if='Directory.Exists("test")'
   @{
-    var projectFiles = Files.Include("test/*/project.json");
+    var projectFiles = Files.Include(TEST_PROJECT_GLOB);
     foreach (var projectFile in projectFiles)
     {
-        DotnetTest(projectFile, Configuration);
+        DotnetTest(projectFile, Configuration, " --no-build");
     }
   }
-
 
 #make-roslyn-fast
   ngen-roslyn
@@ -388,13 +403,13 @@ macro name='Dotnet' command='string' dotnetDir='string'
 macro name="DotnetBuild" projectFile='string' configuration='string' framework='string'
     dotnet-build
 
-macro name="DotnetPack" projectFile='string' dotnetPackOutputDir='string' configuration='string'
+macro name="DotnetPack" projectFile='string' dotnetPackOutputDir='string' configuration='string' pack_options='string'
     dotnet-pack
 
 macro name="DotnetPublish" projectFile='string' outputFolder='string' framework='string' configuration='string'
     dotnet-publish
 
-macro name="DotnetTest" projectFile='string' configuration='string'
+macro name="DotnetTest" projectFile='string' configuration='string' test_options='string'
     dotnet-test
 
 macro name='Npm' npmCommand='string' npmDir='string'
