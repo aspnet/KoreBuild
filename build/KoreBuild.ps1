@@ -59,7 +59,7 @@ if (!(Test-Path "$koreBuildFolder\Sake"))
             throw "Unable to find $toolsProject"
         }
     }
-    &dotnet restore "$toolsProject" --packages "$PSScriptRoot" -f https://www.myget.org/F/dnxtools/api/v3/index.json -v Minimal
+    &dotnet restore "$toolsProject" --packages "$PSScriptRoot" -v Minimal
     # Rename the project after restore because we don't want it to be restore afterwards
     mv "$toolsProject" "$toolsProject.norestore"
     # We still nuget because dotnet doesn't have support for pushing packages
