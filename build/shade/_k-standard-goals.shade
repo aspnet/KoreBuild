@@ -189,12 +189,15 @@ default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
 
   copy sourceDir='${Path.GetDirectoryName(project)}' include='bin/**/' outputDir='${Path.Combine(BUILD_DIR, Path.GetFileNameWithoutExtension(project))}' overwrite='${true}' each='var project in nativeProjects'
 
-#nuget-verify target='package' if='File.Exists(PACKAGELIST_JSON_FILENAME) && ShouldVerifyNupkgs' description='Verify if all the packages are generated properly'
+#nuget-verify target='package' description='Verify if all the packages are generated properly'
   @{
-    var verifierDirectory = Directory.EnumerateDirectories(Path.Combine(KoreBuildFolderPath, "NuGetPackageVerifier")).First();
-    Exec(
-        Path.Combine(verifierDirectory, "NuGetPackageVerifier.exe"),
-        string.Format("\"{0} \" \"{1} \"", BUILD_DIR, Path.Combine(BASE_DIR, PACKAGELIST_JSON_FILENAME)));
+    if (ShouldVerifyNupkgs && File.Exists(PACKAGELIST_JSON_FILENAME))
+    {
+        var verifierDirectory = Directory.EnumerateDirectories(Path.Combine(KoreBuildFolderPath, "NuGetPackageVerifier")).First();
+        Exec(
+            Path.Combine(verifierDirectory, "NuGetPackageVerifier.exe"),
+            string.Format("\"{0} \" \"{1} \"", BUILD_DIR, Path.Combine(BASE_DIR, PACKAGELIST_JSON_FILENAME)));
+    }
   }
 
 #nuget-install target='install' description='Install NuGet packages to local repo'
