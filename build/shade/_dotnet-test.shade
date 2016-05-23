@@ -15,6 +15,7 @@ configuration=''
 */}
 
 default configuration = 'Debug'
+default IgnoreDotnetTestExitCode = '${E("KOREBUILD_IGNORE_DOTNET_TEST_EXIT_CODE") == "true"}'
 
 @{
     var content = File.ReadAllText(projectFile);
@@ -37,7 +38,18 @@ default configuration = 'Debug'
         }
 
         testArgs += noParallelTestProjects.Contains(projectName) ? " -parallel none" : "";
-        Dotnet("test" + testArgs, projectFolder);
+
+        try
+        {
+            Dotnet("test" + testArgs, projectFolder);
+        }
+        catch
+        {
+            if (IgnoreDotnetTestExitCode)
+            {
+                // Skip dotnet-test exit code.
+            }
+        }
     }
 }
 
