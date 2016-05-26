@@ -148,8 +148,11 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
     {
         projectGlobs.Add(SAMPLES_PROJECT_GLOB);
     }
-
-    DotnetBuild(string.Join(" ", projectGlobs.ToArray()), Configuration, BuildFramework);
+    
+    if (projectGlobs.Any())
+    {
+      DotnetBuild(string.Join(" ", projectGlobs.ToArray()), Configuration, BuildFramework);
+    }
 
     if (srcProjects != null)
     {
