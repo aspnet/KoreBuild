@@ -52,7 +52,7 @@ else
     # requires sudo
     export DOTNET_INSTALL_DIR=~/.dotnet
     export KOREBUILD_FOLDER="$(dirname $koreBuildFolder)"
-    chmod +x $koreBuildFolder/dotnet/install.sh
+    chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
     $koreBuildFolder/dotnet/install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
 
