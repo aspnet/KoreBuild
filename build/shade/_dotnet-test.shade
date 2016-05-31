@@ -46,9 +46,10 @@ default test_options=' ${E("KOREBUILD_DOTNET_TEST_OPTIONS")}'
         }
         catch
         {
-            if (IgnoreDotnetTestExitCode)
+            if (!IgnoreDotnetTestExitCode)
             {
-                // Skip dotnet-test exit code.
+                // Ignore dotnet-test exit code if KOREBUILD_IGNORE_DOTNET_TEST_EXIT_CODE is set.
+                throw;
             }
         }
     }
