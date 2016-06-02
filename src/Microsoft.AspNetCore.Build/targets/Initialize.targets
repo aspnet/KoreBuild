@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Put targets attached to the 'Initialize' phase of the Standard Lifecycle here. -->
+
+  <PropertyGroup>
+    <!-- "Private" helper properties" -->
+    <_StartYear>$([System.DateTime]::Parse($(ProductStartDate)).Year)</_StartYear>
+    <_CurrentYear>$([System.DateTime]::UtcNow.Year)</_CurrentYear>
+    <_YearsSinceStart>$([MSBuild]::Subtract($(_CurrentYear), $(_StartYear)))</_YearsSinceStart>
+    <_YearsSinceStart Condition="'$(_YearsSinceStart)' &lt; 0">0</_YearsSinceStart>
+    <_DayBasedVersionNumber>$(_YearsSinceStart)$([System.DateTime]::UtcNow.ToString("MMdd"))</_DayBasedVersionNumber>
+
+    <!-- GROSS -->
+    <_SecondBasedTimeStamp_Str>$([System.DateTime]::UtcNow.Subtract($([System.DateTime]::Parse($(ProductStartDate)))).TotalSeconds.ToString())</_SecondBasedTimeStamp_Str>
+    <_SecondBasedTimeStamp>$([System.Int64]::Parse($(_SecondBasedTimeStamp_Str.Substring(0, $(_SecondBasedTimeStamp_Str.IndexOf("."))))).ToString("x9"))</_SecondBasedTimeStamp>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- The primary set of properties defining a Build of an ASP.NET Core repo. All overridable, in theory. -->
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <RepositoryDir Condition="'$(RepositoryDir)' == ''">$(MSBuildStartupDirectory)</RepositoryDir>
+    <BuildQuality Condition="'$(BuildQuality)' == ''">alpha</BuildQuality>
+    <BuildVersion Condition="'$(BuildVersion)' == ''">1.0.0</BuildVersion>
+    <BuildNumber Condition="'$(BuildNumber)' == '' And '$(DOTNET_BUILD_VERSION)' != ''">$(DOTNET_BUILD_VERSION)</BuildNumber>
+    <BuildNumber Condition="'$(BuildNumber)' == ''">t$(_SecondBasedTimeStamp)</BuildNumber>
+    <Authors Condition="'$(Authors)' == '' And '$(DOTNET_AUTHOR)' != ''">$(DOTNET_AUTHOR)</Authors>
+    <Authors Condition="'$(Authors)' == ''">$(DefaultAuthors)</Authors>
+    <AssemblyFileNumber Condition="'$(AssemblyFileNumber)' == '' And '$(DOTNET_ASSEMBLY_FILE_VERSION)' != ''">$(DOTNET_ASSEMBLY_FILE_VERSION)</AssemblyFileNumber>
+    <AssemblyFileNumber Condition="'$(AssemblyFileNumber)' == ''">$(_DayBasedVersionNumber)</AssemblyFileNumber>
+
+    <DetectedBuildHost Condition="'$(TEAMCITY_VERSION)' != ''">TeamCity</DetectedBuildHost>
+    <DetectedBuildHost Condition="'$(TRAVIS)' != '' And '$(CONTINUOUS_INTEGRATION)' != ''">Travis</DetectedBuildHost>
+    <DetectedBuildHost Condition="'$(DetectedBuildHost)' == ''">Local Build</DetectedBuildHost>
+    <BuildHost Condition="'$(BuildHost)' == ''">$(DetectedBuildHost)</BuildHost>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Properties derived from the above, not overridable -->
+    <AssemblyFileVersion>$(BuildVersion).$(AssemblyFileNumber)</AssemblyFileVersion>
+    <BuildVersionSuffix>$(BuildQuality)-$(BuildNumber)</BuildVersionSuffix>
+    <BuildSemanticVersion>$(BuildVersion)-$(BuildVersionSuffix)</BuildSemanticVersion>
+
+    <SourceDir>$([System.IO.Path]::Combine($(RepositoryDir), "src"))</SourceDir>
+    <TestDir>$([System.IO.Path]::Combine($(RepositoryDir), "test"))</TestDir>
+    <ToolsDir>$([System.IO.Path]::Combine($(RepositoryDir), "tools"))</ToolsDir>
+    <SamplesDir>$([System.IO.Path]::Combine($(RepositoryDir), "samples"))</SamplesDir>
+    <ArtifactsDir>$([System.IO.Path]::Combine($(RepositoryDir), "artifacts"))</ArtifactsDir>
+    <BuildDir>$([System.IO.Path]::Combine($(ArtifactsDir), "build"))</BuildDir>
+    <PackagesDir>$([System.IO.Path]::Combine($(ArtifactsDir), "packages"))</PackagesDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Locate things to be restored -->
+    <NpmDirs Include="$(RepositoryDir)/**/package.json" />
+    <BowerDirs Include="$(RepositoryDir)/**/bower.json" />
+    <GruntDirs Include="$(RepositoryDir)/**/gruntfile.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UnresolvedProjects Include="$(SourceDir)/**/project.json" />
+    <UnresolvedProjects Include="$(TestDir)/**/project.json" />
+    <UnresolvedProjects Include="$(SamplesDir)/**/project.json" />
+  </ItemGroup>
+
+  <Target Name="CollectCommitHash">
+    <GetGitCommitInfo RepositoryRoot="$(RepositoryDir)" WarnOnError="true">
+      <Output TaskParameter="Branch" PropertyName="GitBranch" />
+      <Output TaskParameter="CommitHash" PropertyName="CommitHash" />
+    </GetGitCommitInfo>
+  </Target>
+
+  <Target Name="DetectOSPlatform">
+    <DetectOSPlatform>
+      <Output TaskParameter="PlatformName" PropertyName="BuildPlatformName" />
+    </DetectOSPlatform>
+    <PropertyGroup>
+      <NuGetPath>$(MSBuildBinPath)/corerun $(MSBuildBinPath)/NuGet.CommandLine.XPlat.dll</NuGetPath>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="GatherProjectMetadata">
+    <GatherProjectMetadata Projects="@(UnresolvedProjects)">
+      <Output TaskParameter="UpdatedProjects" ItemName="Projects" />
+    </GatherProjectMetadata>
+    <ItemGroup>
+      <SourceProjects Include="@(Projects)" Condition="'%(Projects.ProjectGroup)' == 'src'" />
+      <TestProjects Include="@(Projects)" Condition="'%(Projects.ProjectGroup)' == 'test'" />
+      <SamplesProjects Include="@(Projects)" Condition="'%(Projects.ProjectGroup)' == 'samples'" />
+    </ItemGroup>
+  </Target>
+
+  <PropertyGroup>
+    <InitializeBuildTargets>
+      CollectCommitHash;
+      DetectOSPlatform;
+      GatherProjectMetadata;
+    </InitializeBuildTargets>
+  </PropertyGroup>
+  <Target Name="InitializeBuild" DependsOnTargets="$(InitializeBuildTargets)" BeforeTargets="Initialize">
+    <Message Text="Starting build $(BuildSemanticVersion) of commit $(CommitHash) (on branch '$(GitBranch)') within $(BuildHost)" Importance="high" />
+  </Target>
+
+  <Target Name="Debug_DumpProperties" DependsOnTargets="Initialize">
+    <Message Text="BuildVersion: $(BuildVersion)" Importance="high" />
+    <Message Text="BuildQuality: $(BuildQuality)" Importance="high" />
+    <Message Text="BuildSemanticVersion: $(BuildSemanticVersion)" Importance="high" />
+    <Message Text="AssemblyFileVersion: $(AssemblyFileVersion)" Importance="high" />
+    <Message Text="RepositoryDir: $(RepositoryDir)" Importance="high" />
+    <Message Text="SourceDir: $(SourceDir)" Importance="high" />
+    <Message Text="TestDir: $(TestDir)" Importance="high" />
+    <Message Text="ToolsDir: $(ToolsDir)" Importance="high" />
+    <Message Text="SamplesDir: $(SamplesDir)" Importance="high" />
+    <Message Text="ArtifactsDir: $(ArtifactsDir)" Importance="high" />
+    <Message Text="BuildDir: $(BuildDir)" Importance="high" />
+    <Message Text="SourceProjects: @(SourceProjects)" Importance="high" />
+    <Message Text="TestProjects: @(TestProjects)" Importance="high" />
+    <Message Text="SamplesProjects: @(SamplesProjects)" Importance="high" />
+    <Message Text="Authors: $(Authors)" Importance="high" />
+    <Message Text="BuildPlatformName: $(BuildPlatformName)" Importance="high" />
+    <Message Text="NuGetPath: $(NuGetPath)" Importance="high" />
+    <Message Text="CommitHash: $(CommitHash)" Importance="high" />
+    <Message Text="GitBranch: $(GitBranch)" Importance="high" />
+
+    <DumpMetadata Items="@(Projects)" />
+  </Target>
+</Project>
