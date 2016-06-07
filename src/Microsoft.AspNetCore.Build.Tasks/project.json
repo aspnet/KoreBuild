@@ -1,0 +1,26 @@
+﻿{
+  "version": "1.0.0-*",
+
+  "buildOptions": {
+    "emitEntryPoint": true
+  },
+
+  "publishOptions": {
+    "include": [ "Microsoft.AspNetCore.Build.Tasks.tasks" ]
+  },
+
+  "dependencies": {
+    "Microsoft.NETCore.App": {
+      "version": "1.0.0-*",
+      "type": "platform"
+    },
+    "Microsoft.Build.Framework": "0.1.0-preview-00023-160527",
+    "Microsoft.Build.Utilities.Core": "0.1.0-preview-00023-160527"
+  },
+
+  "frameworks": {
+    "netcoreapp1.0": {
+      "imports": "dnxcore50"
+    }
+  }
+}
