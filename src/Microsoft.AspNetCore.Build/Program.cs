@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Microsoft.AspNetCore.Build.Tasks
+namespace Microsoft.AspNetCore.Build
 {
     public static class Program
     {

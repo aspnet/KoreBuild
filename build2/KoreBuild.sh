@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+
+# Stop the script on any error
 set -e
 
 # Colors
@@ -88,8 +90,8 @@ ensure_msbuild() {
         __exec dotnet publish "$MSBUILD_DIR/project.json" -o "$MSBUILD_DIR/bin/pub"
 
         echo -e "${GREEN}Preparing KoreBuild Tasks ...${RESET}"
-        __exec dotnet restore "$KOREBUILD_ROOT/src/Microsoft.AspNetCore.Build.Tasks" -v Minimal
-        __exec dotnet publish "$KOREBUILD_ROOT/src/Microsoft.AspNetCore.Build.Tasks" -o "$MSBUILD_DIR/bin/pub" -f "netcoreapp1.0"
+        __exec dotnet restore "$KOREBUILD_ROOT/src/Microsoft.AspNetCore.Build" -v Minimal
+        __exec dotnet publish "$KOREBUILD_ROOT/src/Microsoft.AspNetCore.Build" -o "$MSBUILD_DIR/bin/pub" -f "netcoreapp1.0"
     else
         echo -e "${BLACK}MSBuild already initialized, use --reset-korebuild to refresh it${RESET}"
     fi
@@ -98,9 +100,11 @@ ensure_msbuild() {
 ensure_dotnet
 ensure_msbuild
 
+KOREBUILD_TARGETS_ROOT="$KOREBUILD_ROOT/src/Microsoft.AspNetCore.Build/targets"
+
 PROJ="$REPO_FOLDER/makefile.proj"
 if [ ! -e "$PROJ" ]; then
-    PROJ="$KOREBUILD_ROOT/msbuild/makefile.proj"
+    PROJ="$KOREBUILD_TARGETS_ROOT/makefile.proj"
 fi
 
 MSBUILD_LOG="$BUILD_ROOT/korebuild.msbuild.log"
@@ -108,4 +112,4 @@ MSBUILD_LOG="$BUILD_ROOT/korebuild.msbuild.log"
 
 echo -e "${GREEN}Starting build...${RESET}"
 echo -e "${CYAN}> msbuild $PROJ $@${RESET}"
-"$MSBUILD_DIR/bin/pub/corerun" "$MSBUILD_DIR/bin/pub/MSBuild.exe" /nologo $PROJ /p:KoreBuildTasksPath="$MSBUILD_DIR/bin/pub/" /fl "/flp:logFile=$MSBUILD_LOG;verbosity=diagnostic" "$@"
+"$MSBUILD_DIR/bin/pub/corerun" "$MSBUILD_DIR/bin/pub/MSBuild.exe" -nologo $PROJ -p:KoreBuildTargetsPath="$KOREBUILD_TARGETS_ROOT" -p:KoreBuildTasksPath="$MSBUILD_DIR/bin/pub/" -fl -flp:logFile="$MSBUILD_LOG;verbosity=diagnostic" "$@"

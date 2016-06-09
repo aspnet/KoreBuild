@@ -84,8 +84,8 @@ function EnsureMSBuild() {
             exec dotnet publish "$MSBuildDir\project.json" -o "$MSBuildDir\bin\pub"
 
             Write-Host -ForegroundColor Green "Preparing KoreBuild Tasks ..."
-            exec dotnet restore "$KoreBuildRoot\src\Microsoft.AspNetCore.Build.Tasks" -v Detailed
-            exec dotnet publish "$KoreBuildRoot\src\Microsoft.AspNetCore.Build.Tasks" -o "$MSBuildDir\bin\pub" -f "netcoreapp1.0"
+            exec dotnet restore "$KoreBuildRoot\src\Microsoft.AspNetCore.Build" -v Detailed
+            exec dotnet publish "$KoreBuildRoot\src\Microsoft.AspNetCore.Build" -o "$MSBuildDir\bin\pub" -f "netcoreapp1.0"
         } catch {
             # Clean up to ensure we aren't half-initialized
             if(Test-Path $MSBuildDir) {
@@ -100,10 +100,12 @@ function EnsureMSBuild() {
 EnsureDotNet
 EnsureMSBuild
 
+$KoreBuildTargetsRoot = "$KoreBuildRoot\src\Microsoft.AspNetCore.Build\targets"
+
 # Check for a local KoreBuild project
 $Proj = Join-Path "$RepositoryRoot" "makefile.proj"
 if(!(Test-Path $Proj)) {
-    $Proj = Join-Path "$KoreBuildRoot" "msbuild\makefile.proj"
+    $Proj = Join-Path "$KoreBuildTargetsRoot" "makefile.proj"
 }
 
 $MSBuildLog = Join-Path $BuildRoot "korebuild.msbuild.log"
@@ -113,4 +115,4 @@ if(Test-Path $MSBuildLog) {
 
 Write-Host -ForegroundColor Green "Starting build ..."
 Write-Host -ForegroundColor DarkGray "> msbuild $Proj $args"
-& "$MSBuildDir\bin\pub\CoreRun.exe" "$MSBuildDir\bin\pub\MSBuild.exe" /nologo "$Proj" /p:KoreBuildTasksPath="$MSBuildDir\bin\pub" /fl "/flp:logFile=$MSBuildLog;verbosity=diagnostic" @args
+& "$MSBuildDir\bin\pub\CoreRun.exe" "$MSBuildDir\bin\pub\MSBuild.exe" /nologo "$Proj" /p:KoreBuildTargetsPath="$KoreBuildTargetsRoot" /p:KoreBuildTasksPath="$MSBuildDir\bin\pub" /fl "/flp:logFile=$MSBuildLog;verbosity=diagnostic" @args

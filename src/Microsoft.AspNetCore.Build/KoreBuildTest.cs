@@ -1,10 +1,6 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using Microsoft.Build.Framework;
-using Microsoft.Build.Utilities;
+﻿using Microsoft.Build.Utilities;
 
-namespace Microsoft.AspNetCore.Build.Tasks
+namespace Microsoft.AspNetCore.Build
 {
     public class KoreBuildTest : Task
     {

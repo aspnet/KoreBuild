@@ -6,7 +6,7 @@
   },
 
   "publishOptions": {
-    "include": [ "Microsoft.AspNetCore.Build.Tasks.tasks" ]
+    "include": [ "Microsoft.AspNetCore.Build.tasks" ]
   },
 
   "dependencies": {
