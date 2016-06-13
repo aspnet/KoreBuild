@@ -3,6 +3,56 @@
 # Stop the script on any error
 set -e
 
+show_help() {
+    echo "Usage: $0 [-r] [--] [arguments to msbuild]"
+    echo "       $0 [-r] [-u <URL>] [--] [arguments to msbuild]"
+    echo "       $0 [-r] [-b <BRANCH>] [--] [arguments to msbuild]"
+    echo ""
+    echo "Arguments:"
+	echo "		-d, --docker			Build in a docker container"
+	echo "		--docker-image <IMAGE>	Build in a docker container based on <IMAGE> (implies --docker)"
+    echo ""
+    echo "Notes:"
+    echo "      The '--' switch is only necessary when you want to pass an argument that would otherwise be recognized by this"
+    echo "      script to KoreBuild. By default, any unrecognized argument will be forwarded to KoreBuild."
+    echo ""
+    echo "      If you wish to build a specific target from the MSBuild project file, use the '-t:<TARGET>' switch, which will be forwarded"
+    echo "      to MSBuild. For example `.\build.sh -t:Verify`"
+}
+
+DEFAULT_DOCKER_IMAGE="korebuild/ubuntu:14.04"
+
+while [[ $# > 0 ]]; do
+    case $1 in
+        -h|-\?|--help)
+            show_help
+            exit 0
+            ;;
+		-d|--docker)
+			DOCKER_IMAGE="$DEFAULT_DOCKER_IMAGE"
+			break
+			;;
+		--docker-image)
+			DOCKER_IMAGE="$2"
+			shift
+			break
+			;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            break
+            ;;
+    esac
+    shift
+done
+
+if [ ! -z "$DOCKER_IMAGE" ]; then
+	exec "$DIR/DockoreEnter.sh" "$DOCKER_IMAGE" "$@"
+	# exec takes over this process, so the rest won't be executed.
+fi
+
 # Colors
 GREEN="\033[1;32m"
 BLACK="\033[0;30m"
@@ -43,9 +93,6 @@ KOREBUILD_ROOT="$( cd "$DIR/../../.." && pwd)"
 
 DOTNET_INSTALL="$KOREBUILD_ROOT/build/dotnet/dotnet-install.sh"
 DOTNET_VERSION_DIR="$KOREBUILD_ROOT/build"
-
-MSBUILD_DIR="$BUILD_ROOT/MSBuildTools"
-TOOLS_DIR="$BUILD_ROOT/Tools"
 
 KOREBUILD_LOG="$BUILD_ROOT/korebuild.log"
 [ ! -e "$KOREBUILD_LOG" ] || rm "$KOREBUILD_LOG"
@@ -102,7 +149,6 @@ ensure_dotnet() {
 
 ensure_msbuild() {
     if [ ! -d "$MSBUILD_DIR" ]; then
-        RID=`dotnet --info | grep "RID" | awk '{ print $2 }'`
 
         mkdir -p $MSBUILD_DIR
         cat "$KOREBUILD_ROOT/src/Microsoft.AspNetCore.Build/scripts/msbuild.project.template.json" | sed "s/RUNTIME/$RID/g" > "$MSBUILD_DIR/project.json"
@@ -121,6 +167,11 @@ ensure_msbuild() {
 }
 
 ensure_dotnet
+
+RID=`dotnet --info | grep "RID" | awk '{ print $2 }'`
+MSBUILD_DIR="$BUILD_ROOT/$RID/MSBuildTools"
+TOOLS_DIR="$BUILD_ROOT/$RID/Tools"
+
 ensure_msbuild
 
 KOREBUILD_TARGETS_ROOT="$KOREBUILD_ROOT/src/Microsoft.AspNetCore.Build/targets"
@@ -135,4 +186,4 @@ MSBUILD_LOG="$BUILD_ROOT/korebuild.msbuild.log"
 
 echo -e "${GREEN}Starting build...${RESET}"
 echo -e "${CYAN}> msbuild $PROJ $@${RESET}"
-"$MSBUILD_DIR/bin/pub/corerun" "$MSBUILD_DIR/bin/pub/MSBuild.exe" -nologo $PROJ -p:KoreBuildToolsPackages="$BUILD_DIR" -p:KoreBuildTargetsPath="$KOREBUILD_TARGETS_ROOT" -p:KoreBuildTasksPath="$MSBUILD_DIR/bin/pub/" -fl -flp:logFile="$MSBUILD_LOG;verbosity=diagnostic" "${MSBUILD_ARGS[@]}"
+"$MSBUILD_DIR/bin/pub/corerun" "$MSBUILD_DIR/bin/pub/MSBuild.exe" -nologo $PROJ -p:RuntimeIdentifier=$RID -p:KoreBuildToolsPackages="$BUILD_DIR" -p:KoreBuildTargetsPath="$KOREBUILD_TARGETS_ROOT" -p:KoreBuildTasksPath="$MSBUILD_DIR/bin/pub/" -fl -flp:logFile="$MSBUILD_LOG;verbosity=diagnostic" "${MSBUILD_ARGS[@]}"

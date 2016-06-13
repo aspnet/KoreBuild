@@ -1,4 +1,12 @@
+param([switch]$Docker, [string]$DockerImage = "korebuild")
+
 Write-Host -ForegroundColor Green "Starting KoreBuild 2.0 ..."
+
+# Check if we're dockering
+if($Docker) {
+    & "$PSScriptRoot\DockoreEnter.ps1" -ImageName:$DockerImage /opt/code/build.sh @args
+    exit
+}
 
 if($env:KOREBUILD_COMPATIBILITY -eq "1") {
     # Rewrite arguments to handle compatibility with 1.0
@@ -32,8 +40,9 @@ if($env:PROCESSOR_ARCHITECTURE -eq "x86") {
     $RID = "win7-x86";
 }
 
-$MSBuildDir = Join-Path $BuildRoot "MSBuildTools"
-$ToolsDir = Join-Path $BuildRoot "Tools"
+$RidRoot = Join-Path $BuildRoot "$RID"
+$MSBuildDir = Join-Path $RidRoot "MSBuildTools"
+$ToolsDir = Join-Path $RidRoot "Tools"
 
 $KoreBuildLog = Join-Path $BuildRoot "korebuild.log"
 if(Test-Path $KoreBuildLog) {
@@ -152,4 +161,4 @@ if(Test-Path $MSBuildLog) {
 
 Write-Host -ForegroundColor Green "Starting build ..."
 Write-Host -ForegroundColor DarkGray "> msbuild $Proj $args"
-& "$MSBuildDir\bin\pub\CoreRun.exe" "$MSBuildDir\bin\pub\MSBuild.exe" /nologo $NoConsoleLoggerArg $CiLoggerArg "$Proj" /p:KoreBuildToolsPackages="$ToolsDir" /p:KoreBuildTargetsPath="$KoreBuildTargetsRoot" /p:KoreBuildTasksPath="$MSBuildDir\bin\pub" /fl "/flp:logFile=$MSBuildLog;verbosity=diagnostic" @args
+& "$MSBuildDir\bin\pub\CoreRun.exe" "$MSBuildDir\bin\pub\MSBuild.exe" /nologo "$Proj" /p:RuntimeIdentifier="$RID" /p:KoreBuildTargetsPath="$KoreBuildTargetsRoot" /p:KoreBuildTasksPath="$MSBuildDir\bin\pub" /fl "/flp:logFile=$MSBuildLog;verbosity=diagnostic" @args
