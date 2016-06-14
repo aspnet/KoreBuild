@@ -1,0 +1,4 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- This file lists all the tasks that ship in KoreBuild -->
+  <UsingTask AssemblyName="Microsoft.AspNetCore.Build" TaskName="Microsoft.AspNetCore.Build.KoreBuildTest" />
+</Project>
