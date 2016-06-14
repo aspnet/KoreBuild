@@ -16,7 +16,7 @@ configuration=''
 
 default configuration = 'Debug'
 default IgnoreDotnetTestExitCode = '${E("KOREBUILD_IGNORE_DOTNET_TEST_EXIT_CODE") == "true"}'
-default test_options=' ${E("KOREBUILD_DOTNET_TEST_OPTIONS")}'
+default test_options=''
 
 @{
     var content = File.ReadAllText(projectFile);
