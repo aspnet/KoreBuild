@@ -40,6 +40,15 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
   }
 }
 
+#--for-ci
+  @{
+    Configuration = "Release";
+    E("Configuration", Configuration);
+    E("KOREBUILD_ADD_ASSEMBLY_INFO", "1");
+    E("KOREBUILD_DOTNET_PACK_OPTIONS", E("KOREBUILD_DOTNET_PACK_OPTIONS") + " --serviceable");
+    E("KOREBUILD_VERIFY_NUPKGS", "1");
+  }
+
 #restore-npm-modules
   @{
     // Find all dirs that contain a package.json file
@@ -158,7 +167,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
     {
         srcProjects.ForEach(projectFile =>
         {
-            DotnetPack(projectFile, BUILD_DIR, Configuration, " --no-build");
+            DotnetPack(projectFile, BUILD_DIR, Configuration, E("KOREBUILD_DOTNET_PACK_OPTIONS") + " --no-build");
         });
 
         foreach (var nupkg in Files.Include(Path.Combine(BUILD_DIR, "*/" + Configuration + "/*.nupkg")))
@@ -230,7 +239,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
     var projectFiles = Files.Include(TEST_PROJECT_GLOB);
     foreach (var projectFile in projectFiles)
     {
-        DotnetTest(projectFile, Configuration, " --no-build");
+        DotnetTest(projectFile, Configuration, E("KOREBUILD_DOTNET_TEST_OPTIONS") + " --no-build");
     }
   }
 
