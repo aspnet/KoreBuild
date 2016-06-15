@@ -12,11 +12,34 @@ RESET="\033[0m"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo -e "${GREEN}Preparing KoreBuild 2.0...${RESET}"
 
+if [ "$KOREBUILD_COMPATIBILITY" = "1" ]; then
+    MSBUILD_ARGS=()
+    for arg in "$@"; do
+        case $arg in
+            --quiet)
+                MSBUILD_ARGS=(${MSBUILD_ARGS[@]} -v:m)
+                ;;
+            --*)
+                echo "Unknown KoreBuild 1.0 switch: $arg. If this switch took an argument, you'll have a bad problem :)"
+                ;;
+            *)
+                TARGET="-t:$(echo "${arg[@]:0:1}" | tr "[:lower:]" "[:upper:]")${arg[@]:1}"
+                MSBUILD_ARGS=(${MSBUILD_ARGS[@]} "$TARGET")
+                ;;
+        esac
+    done
+    echo -e "${BLACK}KoreBuild 1.0 Compatibility Mode Enabled${RESET}"
+    echo -e "${BLACK}KoreBuild 1.0 Command Line: ${@}${RESET}"
+    echo -e "${BLACK}KoreBuild 2.0 Command Line: ${MSBUILD_ARGS[@]}${RESET}"
+else
+    MSBUILD_ARGS=("$@")
+fi
+
 export REPO_FOLDER=$PWD
 export KOREBUILD_FOLDER="$(dirname $DIR)"
 
 BUILD_ROOT="$REPO_FOLDER/.build"
-KOREBUILD_ROOT="$( cd "$DIR/.." && pwd)"
+KOREBUILD_ROOT="$( cd "$DIR/../../.." && pwd)"
 
 DOTNET_INSTALL="$KOREBUILD_ROOT/build/dotnet/dotnet-install.sh"
 DOTNET_VERSION_DIR="$KOREBUILD_ROOT/build"
@@ -82,7 +105,7 @@ ensure_msbuild() {
         RID=`dotnet --info | grep "RID" | awk '{ print $2 }'`
 
         mkdir -p $MSBUILD_DIR
-        cat "$KOREBUILD_ROOT/build2/msbuild.project.json.template" | sed "s/RUNTIME/$RID/g" > "$MSBUILD_DIR/project.json"
+        cat "$KOREBUILD_ROOT/src/Microsoft.AspNetCore.Build/scripts/msbuild.project.template.json" | sed "s/RUNTIME/$RID/g" > "$MSBUILD_DIR/project.json"
         cp "$KOREBUILD_ROOT/NuGet.config" "$MSBUILD_DIR"
 
         echo -e "${GREEN}Preparing MSBuild ...${RESET}"
@@ -112,4 +135,4 @@ MSBUILD_LOG="$BUILD_ROOT/korebuild.msbuild.log"
 
 echo -e "${GREEN}Starting build...${RESET}"
 echo -e "${CYAN}> msbuild $PROJ $@${RESET}"
-"$MSBUILD_DIR/bin/pub/corerun" "$MSBUILD_DIR/bin/pub/MSBuild.exe" -nologo $PROJ -p:KoreBuildTargetsPath="$KOREBUILD_TARGETS_ROOT" -p:KoreBuildTasksPath="$MSBUILD_DIR/bin/pub/" -fl -flp:logFile="$MSBUILD_LOG;verbosity=diagnostic" "$@"
+"$MSBUILD_DIR/bin/pub/corerun" "$MSBUILD_DIR/bin/pub/MSBuild.exe" -nologo $PROJ -p:KoreBuildTargetsPath="$KOREBUILD_TARGETS_ROOT" -p:KoreBuildTasksPath="$MSBUILD_DIR/bin/pub/" -fl -flp:logFile="$MSBUILD_LOG;verbosity=diagnostic" "${MSBUILD_ARGS[@]}"

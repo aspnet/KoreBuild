@@ -73,7 +73,7 @@ fi
 
 BUILD_FOLDER="$DIR/.build"
 KOREBUILD_ROOT="$BUILD_FOLDER/KoreBuild"
-BUILD_FILE="$KOREBUILD_ROOT/build2/KoreBuild.sh"
+BUILD_FILE="$KOREBUILD_ROOT/scripts/KoreBuild.sh"
 
 if [[ -d $BUILD_FOLDER && $KOREBUILD_RESET = "1" ]]; then
     echo -e "${GREEN}Cleaning old KoreBuild folder to force a reset ...${RESET}"
