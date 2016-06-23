@@ -300,6 +300,10 @@ get_azure_channel_from_channel() {
             echo "preview"
             return 0
             ;;
+        rel-1.0.0)
+            echo "rel-1.0.0"
+            return 0
+            ;;
         production)
             say_err "Production channel does not exist yet"
             return 1

@@ -149,6 +149,7 @@ function Get-Azure-Channel-From-Channel([string]$Channel) {
         { ($_ -eq "future") -or ($_ -eq "dev") } { return "dev" }
         { ($_ -eq "beta") } { return "beta" }
         { ($_ -eq "preview") } { return "preview" }
+        { ($_ -eq "rel-1.0.0") } { return "rel-1.0.0" }
         { $_ -eq "production" } { throw "Production channel does not exist yet" }
         default { throw "``$Channel`` is an invalid channel name. Use one of the following: ``future``, ``preview``, ``production``" }
     }
