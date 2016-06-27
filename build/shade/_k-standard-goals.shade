@@ -25,9 +25,9 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
   {
     E("DOTNET_BUILD_VERSION", BuildNumber);
   }
-  if (string.IsNullOrEmpty(E("DOTNET_AUTHOR")))
+  if (string.IsNullOrEmpty(E("NUGET_AUTHOR")))
   {
-    E("DOTNET_AUTHOR", AUTHORS);
+    E("NUGET_AUTHOR", 'Microsoft');
   }
   if (string.IsNullOrEmpty(E("DOTNET_ASSEMBLY_FILE_VERSION")))
   {
