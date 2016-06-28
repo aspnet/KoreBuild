@@ -62,6 +62,13 @@ if (!(Test-Path "$koreBuildFolder\Sake"))
     &dotnet restore "$toolsProject" --packages "$PSScriptRoot" -v Minimal
     # Rename the project after restore because we don't want it to be restore afterwards
     mv "$toolsProject" "$toolsProject.norestore"
+
+    $xplatRestoreProject = "$koreBuildFolder/xplat.project.json"
+    if (Test-Path $xplatRestoreProject)
+    {
+        mv $xplatRestoreProject "$xplatRestoreProject.norestore"
+    }
+
     # We still nuget because dotnet doesn't have support for pushing packages
     Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" -OutFile "$koreBuildFolder/nuget.exe"
 }
