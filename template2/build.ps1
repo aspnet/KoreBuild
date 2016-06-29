@@ -20,7 +20,8 @@ param(
     [Alias("r")][switch]$ResetKoreBuild,
     [Parameter(ParameterSetName="DownloadByUrl")][Alias("u")][string]$KoreBuildUrl,
     [Parameter(ParameterSetName="DownloadByBranch")][Alias("b")][string]$KoreBuildBranch,
-    [Parameter(ParameterSetName="DownloadFromFolder")]$KoreBuildFolder)
+    [Parameter(ParameterSetName="DownloadFromFolder")]$KoreBuildFolder,
+    [Parameter(ValueFromRemainingArguments=$true)][string[]]$KoreBuildArgs)
 
 function DownloadWithRetry([string] $url, [string] $downloadLocation, [int] $retries)
 {
@@ -62,7 +63,7 @@ if ($PSCmdlet.ParameterSetName -eq "DownloadDefault") {
 
 $BuildFolder = Join-Path $PSScriptRoot ".build"
 $KoreBuildRoot = Join-Path $BuildFolder "KoreBuild"
-$BuildFile = Join-Path $KoreBuildRoot "build2\KoreBuild.ps1"
+$BuildFile = Join-Path $KoreBuildRoot "scripts\KoreBuild.ps1"
 
 if ($ResetKoreBuild -and (Test-Path $BuildFolder)) {
     Write-Host -ForegroundColor Green "Cleaning old Build folder to force a reset ..."
@@ -94,14 +95,14 @@ if (!(Test-Path $KoreBuildRoot)) {
     }
 }
 
-if(($MSBuildArgs -contains "-t:") -or ($MSBuildArgs -contains "-p:")) {
+if(($KoreBuildArgs -contains "-t:") -or ($KoreBuildArgs -contains "-p:")) {
     throw "Due to PowerShell weirdness, you need to use '/t:' and '/p:' to pass targets and properties to MSBuild"
 }
 
 # Launch KoreBuild
 try {
     pushd $PSScriptRoot
-    & "$BuildFile" @args
+    & "$BuildFile" @KoreBuildArgs
 } finally {
     popd
 }

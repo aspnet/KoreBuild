@@ -76,7 +76,7 @@ if(!$KoreBuildUrl) {
 }
 
 if($Local) {
-    $TemplateSource = Join-Path $PSScriptRoot "template2"
+    $TemplateSource = Join-Path (Split-Path -Parent $PSScriptRoot) "template2"
     Write-Host -ForegroundColor Green "Copying template files from $TemplateSource ..."
     dir $TemplateSource | ForEach-Object {
         $dest = Join-Path (Get-Location) $_.Name
@@ -93,7 +93,6 @@ else {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $zip = [System.IO.Compression.ZipFile]::OpenRead($KoreBuildZip)
     try {
-
         # Copy the template files over top of existing files.
         Write-Host -ForegroundColor Green "Copying template files from $KoreBuildZip ..."
         $zip.Entries | ForEach-Object {

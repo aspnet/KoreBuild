@@ -1,8 +1,28 @@
 Write-Host -ForegroundColor Green "Starting KoreBuild 2.0 ..."
 
+if($env:KOREBUILD_COMPATIBILITY -eq "1") {
+    # Rewrite arguments to handle compatibility with 1.0
+    $new_args = $args | ForEach-Object {
+        if($_ -eq "--quiet") {
+            "/v:m"
+        }
+        elseif($_.StartsWith("--")) {
+            # Other unknown switch
+            Write-Warning "Unknown KoreBuild 1.0 switch: $_. If this switch took an argument, you'll have a bad problem :)"
+        } else {
+            $target = [char]::ToUpper($_[0]) + $_.Substring(1)
+            "/t:$target"
+        }
+    }
+    Write-Host -ForegroundColor DarkGray "KoreBuild 1.0 Compatibility Mode Enabled"
+    Write-Host -ForegroundColor DarkGray "KoreBuild 1.0 Command Line: $args"
+    $args = $new_args
+    Write-Host -ForegroundColor DarkGray "KoreBuild 2.0 Command Line: $args"
+}
+
 $RepositoryRoot = Convert-Path (Get-Location)
 $BuildRoot = Join-Path $RepositoryRoot ".build"
-$KoreBuildRoot = Split-Path -Parent $PSScriptRoot
+$KoreBuildRoot = (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)))
 
 $env:REPO_FOLDER = $RepositoryRoot
 $env:KOREBUILD_FOLDER = $KoreBuildRoot
@@ -32,7 +52,7 @@ function exec($cmd) {
 
 function EnsureDotNet() {
     $dotnetVersionFile = "$KoreBuildRoot\build\cli.version.win"
-    $dotnetChannel = "preview"
+    $dotnetChannel = "rel-1.0.0"
     $dotnetVersion = Get-Content $dotnetVersionFile
 
     if ($env:KOREBUILD_DOTNET_CHANNEL)
@@ -46,7 +66,7 @@ function EnsureDotNet() {
 
     $dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\"
     $newPath = "$dotnetLocalInstallFolder;$env:PATH"
-    if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1") 
+    if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
     {
         Write-Host -ForegroundColor Green "Skipping runtime installation because KOREBUILD_SKIP_RUNTIME_INSTALL = 1"
         # Add to the _end_ of the path in case preferred .NET CLI is not in the default location.
@@ -72,7 +92,7 @@ function EnsureMSBuild() {
     if(!(Test-Path $MSBuildDir)) {
         try {
             mkdir $MSBuildDir | Out-Null
-            $content = [IO.File]::ReadAllText((Convert-Path "$KoreBuildRoot\build2\msbuild.project.json.template"))
+            $content = [IO.File]::ReadAllText((Convert-Path "$PSScriptRoot\msbuild.project.template.json"))
             $content = $content.Replace("RUNTIME", $RID)
 
             [IO.File]::WriteAllText((Join-Path $MSBuildDir "project.json"), $content);
