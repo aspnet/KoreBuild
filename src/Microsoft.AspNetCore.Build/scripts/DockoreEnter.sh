@@ -2,6 +2,9 @@
 # Stop the script on any error
 set -e
 
+echo "Not yet updated"
+exit 1
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Colors
@@ -22,8 +25,7 @@ fi
 if [[ $IMAGE_NAME = korebuild/* ]]; then
     echo -e "${GREEN}Ensuring KoreBuild image $IMAGE_NAME is built ..."
     IMAGE_REL_PATH="$(echo "$IMAGE_NAME" | sed s/korebuild\///g s/:/\//g)"
-    ROOT="$( cd "$DIR/.." && pwd)"
-    IMAGE_PATH="$ROOT/docker/$IMAGE_REL_PATH"
+    IMAGE_PATH="$DIR/docker/$IMAGE_REL_PATH"
     if [ ! -e $IMAGE_PATH ]; then
         echo "Could not find Dockerfile in $IMAGE_PATH" 1>&2
         exit 1

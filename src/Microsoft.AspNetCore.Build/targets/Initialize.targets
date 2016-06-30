@@ -31,6 +31,7 @@
     <DetectedBuildHost Condition="'$(TRAVIS)' != '' And '$(CONTINUOUS_INTEGRATION)' != ''">Travis</DetectedBuildHost>
     <DetectedBuildHost Condition="'$(DetectedBuildHost)' == ''">Local Build</DetectedBuildHost>
     <BuildHost Condition="'$(BuildHost)' == ''">$(DetectedBuildHost)</BuildHost>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">unknown-platform</RuntimeIdentifier>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Properties derived from the above, not overridable -->
@@ -42,7 +43,7 @@
     <TestDir>$([System.IO.Path]::Combine($(RepositoryDir), "test"))</TestDir>
     <ToolsDir>$([System.IO.Path]::Combine($(RepositoryDir), "tools"))</ToolsDir>
     <SamplesDir>$([System.IO.Path]::Combine($(RepositoryDir), "samples"))</SamplesDir>
-    <ArtifactsDir>$([System.IO.Path]::Combine($(RepositoryDir), "artifacts"))</ArtifactsDir>
+    <ArtifactsDir>$([System.IO.Path]::Combine($(RepositoryDir), "artifacts", $(RuntimeIdentifier)))</ArtifactsDir>
     <BuildDir>$([System.IO.Path]::Combine($(ArtifactsDir), "build"))</BuildDir>
     <PackagesDir>$([System.IO.Path]::Combine($(ArtifactsDir), "packages"))</PackagesDir>
   </PropertyGroup>
@@ -95,6 +96,7 @@
     </InitializeBuildTargets>
   </PropertyGroup>
   <Target Name="InitializeBuild" DependsOnTargets="$(InitializeBuildTargets)" BeforeTargets="Initialize">
+    <Warning Text="Property 'RuntimeIdentifier' was not provided. Using 'unknown-platform' as a placeholder value" Condition="'$(RuntimeIdentifier)' == 'unknown-platform'" />
     <Message Text="Starting build $(BuildSemanticVersion) of commit $(CommitHash) (on branch '$(GitBranch)') within $(BuildHost)" Importance="high" />
   </Target>
 

@@ -9,10 +9,12 @@
     Deletes the '.build' directory which contains the current set of KoreBuild scripts before building. This forces the build script to re-download the latest version of the scripts.
 .PARAMETER KoreBuildUrl
     The URL from which to download the KoreBuild ZIP
+.PARAMETER KoreBuildFolder
+    The local folder from which to retrieve KoreBuild files (designed for use when testing KoreBuild changes). This overrides both the -KoreBuildUrl and -KoreBuildBranch parameters.
 .PARAMETER KoreBuildBranch
     The branch in the default KoreBuild repository (https://github.com/aspnet/KoreBuild) to download. This overrides the -KoreBuildUrl parameter.
-.PARAMETER KoreKoreBuildRoot
-    The local folder from which to retrieve KoreBuild files (designed for use when testing KoreBuild changes). This overrides both the -KoreBuildUrl and -KoreBuildBranch parameters.
+.PARAMETER KoreBuildArgs
+    Arguments to pass along to the KoreBuild script itself. This argument automatically recieves any arguments provided which are not otherwise listed here.
 #>
 
 [CmdletBinding(PositionalBinding=$false,DefaultParameterSetName="DownloadDefault")]
@@ -102,7 +104,8 @@ if(($KoreBuildArgs -contains "-t:") -or ($KoreBuildArgs -contains "-p:")) {
 # Launch KoreBuild
 try {
     pushd $PSScriptRoot
-    & "$BuildFile" @KoreBuildArgs
+    Write-Host -ForegroundColor DarkGray "> KoreBuild.ps1 $KoreBuildArgs"
+    iex "$BuildFile $KoreBuildArgs"
 } finally {
     popd
 }

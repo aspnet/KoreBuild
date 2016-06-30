@@ -55,7 +55,6 @@ fi
 
 # Colors
 GREEN="\033[1;32m"
-BLACK="\033[0;30m"
 CYAN="\033[0;36m"
 RESET="\033[0m"
 
@@ -78,9 +77,9 @@ if [ "$KOREBUILD_COMPATIBILITY" = "1" ]; then
                 ;;
         esac
     done
-    echo -e "${BLACK}KoreBuild 1.0 Compatibility Mode Enabled${RESET}"
-    echo -e "${BLACK}KoreBuild 1.0 Command Line: ${@}${RESET}"
-    echo -e "${BLACK}KoreBuild 2.0 Command Line: ${MSBUILD_ARGS[@]}${RESET}"
+    echo -e "${CYAN}KoreBuild 1.0 Compatibility Mode Enabled${RESET}"
+    echo -e "${CYAN}KoreBuild 1.0 Command Line: ${@}${RESET}"
+    echo -e "${CYAN}KoreBuild 2.0 Command Line: ${MSBUILD_ARGS[@]}${RESET}"
 else
     MSBUILD_ARGS=("$@")
 fi
@@ -116,11 +115,11 @@ ensure_dotnet() {
     versionFile="$DOTNET_VERSION_DIR/$versionFileName"
     version=$(<$versionFile)
 
-    [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=preview
+    [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=rel-1.0.0
     [ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
 
     if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
-        echo -e "${BLACK}Skipping runtime installation because KOREBUILD_SKIP_RUNTIME_INSTALL is set${RESET}"
+        echo -e "${CYAN}Skipping runtime installation because KOREBUILD_SKIP_RUNTIME_INSTALL is set${RESET}"
 
         # Add .NET installation directory to the path if it isn't yet included.
         # Add to the _end_ in case preferred .NET CLI is not in the default location.
@@ -131,7 +130,8 @@ ensure_dotnet() {
         export DOTNET_INSTALL_DIR=~/.dotnet
         chmod +x $DOTNET_INSTALL
 
-        __exec $DOTNET_INSTALL --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION >> $KOREBUILD_LOG
+        echo -e "${GREEN}Installing .NET Command-Line Tools ...${RESET}"
+        __exec $DOTNET_INSTALL --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
 
         # Add .NET installation directory to the path if it isn't yet included.
         [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"
@@ -162,7 +162,7 @@ ensure_msbuild() {
         __exec dotnet restore "$KOREBUILD_ROOT/src/Microsoft.AspNetCore.Build" -v Minimal
         __exec dotnet publish "$KOREBUILD_ROOT/src/Microsoft.AspNetCore.Build" -o "$MSBUILD_DIR/bin/pub" -f "netcoreapp1.0"
     else
-        echo -e "${BLACK}MSBuild already initialized, use --reset-korebuild to refresh it${RESET}"
+        echo -e "${CYAN}MSBuild already initialized, use --reset-korebuild to refresh it${RESET}"
     fi
 }
 

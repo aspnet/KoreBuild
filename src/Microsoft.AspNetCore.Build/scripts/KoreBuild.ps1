@@ -1,4 +1,4 @@
-param([switch]$Docker, [string]$DockerImage = "korebuild")
+param([switch]$Docker, [string]$DockerImage = "korebuild/ubuntu:14.04")
 
 Write-Host -ForegroundColor Green "Starting KoreBuild 2.0 ..."
 
