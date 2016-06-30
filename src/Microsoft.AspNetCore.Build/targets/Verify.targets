@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Put targets attached to the 'Verify' phase of the Standard Lifecycle here. -->
+  <PropertyGroup>
+    <PackageVerifierList>$([System.IO.Path]::Combine('$(RepositoryDir)', 'NuGetPackageVerifier.json'))</PackageVerifierList>
+  </PropertyGroup>
+  <Target Name="VerifyNuGetPackages" BeforeTargets="Verify">
+    <Error Text="NuGetPackageVerifier only works on Windows right now :(" Condition="'$(BuildPlatformName)' != 'Windows'" />
+
+    <ResolvePackagedTool PackagesDir="$(KoreBuildToolsPackages)" PackageId="NuGetPackageVerifier" RelativePath="NuGetPackageVerifier.exe">
+      <Output TaskParameter="ToolPath" PropertyName="NuGetPackageVerifier" />
+    </ResolvePackagedTool>
+    <Exec
+      Command="$(NuGetPackageVerifier) &quot;$(PackagesDir)&quot; &quot;$(PackageVerifierList)&quot;"
+      Condition="'$(Configuration)' == 'Release'" />
+    <Warning Text="Package verification only occurs on Release builds" Condition="'$(Configuration)' != 'Release'" />
+  </Target>
+</Project>

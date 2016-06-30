@@ -135,4 +135,4 @@ MSBUILD_LOG="$BUILD_ROOT/korebuild.msbuild.log"
 
 echo -e "${GREEN}Starting build...${RESET}"
 echo -e "${CYAN}> msbuild $PROJ $@${RESET}"
-"$MSBUILD_DIR/bin/pub/corerun" "$MSBUILD_DIR/bin/pub/MSBuild.exe" -nologo $PROJ -p:KoreBuildTargetsPath="$KOREBUILD_TARGETS_ROOT" -p:KoreBuildTasksPath="$MSBUILD_DIR/bin/pub/" -fl -flp:logFile="$MSBUILD_LOG;verbosity=diagnostic" "${MSBUILD_ARGS[@]}"
+"$MSBUILD_DIR/bin/pub/corerun" "$MSBUILD_DIR/bin/pub/MSBuild.exe" -nologo $PROJ -p:KoreBuildToolsPackages="$BUILD_DIR" -p:KoreBuildTargetsPath="$KOREBUILD_TARGETS_ROOT" -p:KoreBuildTasksPath="$MSBUILD_DIR/bin/pub/" -fl -flp:logFile="$MSBUILD_LOG;verbosity=diagnostic" "${MSBUILD_ARGS[@]}"

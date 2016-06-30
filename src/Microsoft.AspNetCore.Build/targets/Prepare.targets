@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <!-- Put targets attached to the 'Prepare' phase of the Standard Lifecycle here. -->
+
+    <PropertyGroup>
+        <RestorePackagesTargets>
+            DotNetRestore;
+            NpmRestore;
+            BowerRestore;
+        </RestorePackagesTargets>
+    </PropertyGroup>
+    <Target Name="RestorePackages" DependsOnTargets="$(RestorePackagesTargets)" BeforeTargets="Prepare" />
+
+    <Target Name="RunGrunt" AfterTargets="RestorePackages" BeforeTargets="Prepare" Condition="'$(RunGrunt)' != 'skip' And '@(GruntDirs)' != ''">
+        <Exec
+            Command="grunt"
+            WorkingDirectory="%(GruntDirs.RootDir)%(GruntDirs.Directory)" />
+    </Target>
+
+    <Target Name="DotNetRestore" Condition="'$(DotNetRestore)' != 'skip'">
+        <ItemGroup>
+            <RestoreDirectories Include="$(SourceDir)" Condition="Exists('$(SourceDir)')" />
+            <RestoreDirectories Include="$(TestDir)" Condition="Exists('$(TestDir)')" />
+            <RestoreDirectories Include="$(SamplesDir)" Condition="Exists('$(SamplesDir)')" />
+        </ItemGroup>
+        <Exec
+            Command="dotnet restore @(RestoreDirectories, ' ') $(DotNetRestore_Options)"
+            WorkingDirectory="$(RepositoryDir)" />
+    </Target>
+
+    <Target Name="NpmRestore" Condition="'$(NpmRestore)' != 'skip' And '@(NpmDirs)' != ''">
+        <Exec
+            Command="npm install $(NpmRestore_Options)"
+            WorkingDirectory="%(NpmDirs.RootDir)%(NpmDirs.Directory)" />
+    </Target>
+
+    <Target Name="BowerRestore" Condition="'$(BowerRestore)' != 'skip' And '@(BowerDirs)' != ''">
+        <Exec
+            Command="bower install $(BowerRestore_Options)"
+            WorkingDirectory="%(BowerDirs.RootDir)%(BowerDirs.Directory)" />
+    </Target>
+</Project>

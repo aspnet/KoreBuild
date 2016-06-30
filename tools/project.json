@@ -1,0 +1,8 @@
+{
+  "frameworks": {
+      "net451": { }
+  },
+  "dependencies": {
+      "NuGetPackageVerifier": "1.0.1-*"
+  }
+}

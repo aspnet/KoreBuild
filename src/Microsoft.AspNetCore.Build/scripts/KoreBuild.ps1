@@ -117,8 +117,25 @@ function EnsureMSBuild() {
     }
 }
 
+function EnsureTools() {
+    if(!(Test-Path $ToolsDir)) {
+        try {
+            Write-Host -ForegroundColor Green "Preparing other build tools ..."
+            exec dotnet restore "$KoreBuildRoot\tools\project.json" -v Detailed --packages "$ToolsDir"
+        } catch {
+            # Clean up to ensure we aren't half-initialized
+            if(Test-Path $ToolsDir) {
+                del -rec -for $ToolsDir
+            }
+        }
+    } else {
+        Write-Host -ForegroundColor DarkGray "Build tools already initialized, use -Reset to refresh them"
+    }
+}
+
 EnsureDotNet
 EnsureMSBuild
+EnsureTools
 
 $KoreBuildTargetsRoot = "$KoreBuildRoot\src\Microsoft.AspNetCore.Build\targets"
 
@@ -135,4 +152,4 @@ if(Test-Path $MSBuildLog) {
 
 Write-Host -ForegroundColor Green "Starting build ..."
 Write-Host -ForegroundColor DarkGray "> msbuild $Proj $args"
-& "$MSBuildDir\bin\pub\CoreRun.exe" "$MSBuildDir\bin\pub\MSBuild.exe" /nologo "$Proj" /p:KoreBuildTargetsPath="$KoreBuildTargetsRoot" /p:KoreBuildTasksPath="$MSBuildDir\bin\pub" /fl "/flp:logFile=$MSBuildLog;verbosity=diagnostic" @args
+& "$MSBuildDir\bin\pub\CoreRun.exe" "$MSBuildDir\bin\pub\MSBuild.exe" /nologo $NoConsoleLoggerArg $CiLoggerArg "$Proj" /p:KoreBuildToolsPackages="$ToolsDir" /p:KoreBuildTargetsPath="$KoreBuildTargetsRoot" /p:KoreBuildTasksPath="$MSBuildDir\bin\pub" /fl "/flp:logFile=$MSBuildLog;verbosity=diagnostic" @args
