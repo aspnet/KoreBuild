@@ -52,4 +52,8 @@
   <Target Name="Clean" DependsOnTargets="Initialize">
     <Message Text="*** Completed Clean Phase ***" />
   </Target>
+
+  <!-- Targets used by CI/etc. Here so that they can be reconfigured via KoreBuild rather than messing with build scripts -->
+  <!-- The target invoked by Universe-Coherence when this repo is built -->
+  <Target Name="UniverseCoherenceBuild" DependsOnTargets="Verify" />
 </Project>
