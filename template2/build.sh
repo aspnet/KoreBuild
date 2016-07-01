@@ -102,10 +102,8 @@ if [ ! -d $BUILD_FOLDER ]; then
             sleep 10s
         done
 
-        # Sub-shell (to preserve current dir)
-        mkdir $BUILD_FOLDER
-        cd $BUILD_FOLDER
-        tar xf $KOREBUILD_TAR --strip-components 1
+        mkdir $KOREBUILD_ROOT
+        tar xf $KOREBUILD_TAR --strip-components 1 --directory $KOREBUILD_ROOT
         rm -Rf $KOREBUILD_DIR
     fi
 fi
