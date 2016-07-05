@@ -1,3 +1,5 @@
+#requires -version 4
+
 $repoFolder = $env:REPO_FOLDER
 if (!$repoFolder) {
     throw "REPO_FOLDER is not set"

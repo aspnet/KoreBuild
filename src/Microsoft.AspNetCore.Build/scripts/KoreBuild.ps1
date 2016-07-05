@@ -1,3 +1,5 @@
+#requires -version 4
+
 Write-Host -ForegroundColor Green "Starting KoreBuild 2.0 ..."
 
 if($env:KOREBUILD_COMPATIBILITY -eq "1") {
