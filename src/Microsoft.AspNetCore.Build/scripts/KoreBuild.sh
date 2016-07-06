@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
 
-# Stop the script on any error
-set -e
-
 # Colors
 GREEN="\033[1;32m"
-BLACK="\033[0;30m"
 CYAN="\033[0;36m"
 RESET="\033[0m"
+RED="\033[0;31m"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo -e "${GREEN}Preparing KoreBuild 2.0...${RESET}"
@@ -28,9 +25,9 @@ if [ "$KOREBUILD_COMPATIBILITY" = "1" ]; then
                 ;;
         esac
     done
-    echo -e "${BLACK}KoreBuild 1.0 Compatibility Mode Enabled${RESET}"
-    echo -e "${BLACK}KoreBuild 1.0 Command Line: ${@}${RESET}"
-    echo -e "${BLACK}KoreBuild 2.0 Command Line: ${MSBUILD_ARGS[@]}${RESET}"
+    echo -e "${CYAN}KoreBuild 1.0 Compatibility Mode Enabled${RESET}"
+    echo -e "${CYAN}KoreBuild 1.0 Command Line: ${@}${RESET}"
+    echo -e "${CYAN}KoreBuild 2.0 Command Line: ${MSBUILD_ARGS[@]}${RESET}"
 else
     MSBUILD_ARGS=("$@")
 fi
@@ -40,6 +37,8 @@ export KOREBUILD_FOLDER="$(dirname $DIR)"
 
 BUILD_ROOT="$REPO_FOLDER/.build"
 KOREBUILD_ROOT="$( cd "$DIR/../../.." && pwd)"
+ARTIFACTS_DIR="$REPO_FOLDER/artifacts"
+[ -d $ARTIFACTS_DIR ] || mkdir $ARTIFACTS_DIR
 
 DOTNET_INSTALL="$KOREBUILD_ROOT/build/dotnet/dotnet-install.sh"
 DOTNET_VERSION_DIR="$KOREBUILD_ROOT/build"
@@ -50,6 +49,13 @@ TOOLS_DIR="$BUILD_ROOT/Tools"
 KOREBUILD_LOG="$BUILD_ROOT/korebuild.log"
 [ ! -e "$KOREBUILD_LOG" ] || rm "$KOREBUILD_LOG"
 
+MSBUILD_RSP="$BUILD_ROOT/korebuild.msbuild.rsp"
+[ ! -e "$MSBUILD_RSP" ] || rm "$MSBUILD_RSP"
+
+MSBUILD_LOG="$BUILD_ROOT/korebuild.msbuild.log"
+[ ! -e "$MSBUILD_LOG" ] || rm "$MSBUILD_LOG"
+
+
 __exec() {
     local cmd=$1
     shift
@@ -57,7 +63,14 @@ __exec() {
     local cmdname=$(basename $cmd)
     echo -e "${CYAN}> $cmdname $@${RESET}"
     echo ">>>>> $cmd $@ <<<<<" >> $KOREBUILD_LOG
-    $cmd "$@" >> $KOREBUILD_LOG
+    $cmd "$@" 2>&1 >> $KOREBUILD_LOG
+
+    local exitCode=$?
+    if [ $exitCode -ne 0 ]; then
+        echo -e "${RED}'$cmdname $@' failed with exit code $exitCode${RESET}" 1>&2
+        echo -e "${RED} check '$ARTIFACTS_DIR/korebuild.log' for more info.${RESET}" 1>&2
+        __end $exitCode
+    fi
 }
 
 ensure_dotnet() {
@@ -116,8 +129,27 @@ ensure_msbuild() {
         __exec dotnet restore "$KOREBUILD_ROOT/src/Microsoft.AspNetCore.Build" -v Minimal
         __exec dotnet publish "$KOREBUILD_ROOT/src/Microsoft.AspNetCore.Build" -o "$MSBUILD_DIR/bin/pub" -f "netcoreapp1.0"
     else
-        echo -e "${BLACK}MSBuild already initialized, use --reset-korebuild to refresh it${RESET}"
+        echo -e "${CYAN}MSBuild already initialized, use --reset-korebuild to refresh it${RESET}"
     fi
+}
+
+__join() {
+    local IFS="$1"
+    shift
+    echo "$*"
+}
+
+__end() {
+    local EXITCODE=$1
+
+    # Copy logs to artifacts
+    cp $MSBUILD_LOG $KOREBUILD_LOG $MSBUILD_RSP $ARTIFACTS_DIR 2>/dev/null >/dev/null
+
+    [ -e "$MSBUILD_LOG" ] && rm $MSBUILD_LOG
+    [ -e "$MSBUILD_RSP" ] && rm $MSBUILD_RSP
+    [ -e "$KOREBUILD_LOG" ] && rm $KOREBUILD_LOG
+
+    exit $EXITCODE
 }
 
 ensure_dotnet
@@ -130,9 +162,20 @@ if [ ! -e "$PROJ" ]; then
     PROJ="$KOREBUILD_TARGETS_ROOT/makefile.proj"
 fi
 
-MSBUILD_LOG="$BUILD_ROOT/korebuild.msbuild.log"
-[ ! -e "$MSBUILD_LOG" ] || rm "$MSBUILD_LOG"
+cat > $MSBUILD_RSP <<ENDMSBUILDARGS
+-nologo
+"$PROJ"
+-p:KoreBuildToolsPackages="$BUILD_DIR"
+-p:KoreBuildTargetsPath="$KOREBUILD_TARGETS_ROOT"
+-p:KoreBuildTasksPath="$MSBUILD_DIR/bin/pub/"
+-fl
+-flp:LogFile="$MSBUILD_LOG";Verbosity=diagnostic;Encoding=UTF-8
+ENDMSBUILDARGS
+__join $'\n' $MSBUILD_ARGS >> $MSBUILD_RSP
 
 echo -e "${GREEN}Starting build...${RESET}"
 echo -e "${CYAN}> msbuild $PROJ $@${RESET}"
-"$MSBUILD_DIR/bin/pub/corerun" "$MSBUILD_DIR/bin/pub/MSBuild.exe" -nologo $PROJ -p:KoreBuildToolsPackages="$BUILD_DIR" -p:KoreBuildTargetsPath="$KOREBUILD_TARGETS_ROOT" -p:KoreBuildTasksPath="$MSBUILD_DIR/bin/pub/" -fl -flp:logFile="$MSBUILD_LOG;verbosity=diagnostic" "${MSBUILD_ARGS[@]}"
+
+# Enable "on error result next" ;P
+"$MSBUILD_DIR/bin/pub/corerun" "$MSBUILD_DIR/bin/pub/MSBuild.exe" @"$MSBUILD_RSP"
+__end $?

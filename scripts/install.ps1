@@ -1,3 +1,4 @@
+#Requires -Version 4
 # Installs KoreBuild into a repo, overwriting all previous build scripts
 # This script is downloaded and executed without any of the corresponding scripts in this repo, so don't assume anything in this repo is available!
 

@@ -2,29 +2,10 @@
 
 Write-Host -ForegroundColor Green "Starting KoreBuild 2.0 ..."
 
-if($env:KOREBUILD_COMPATIBILITY -eq "1") {
-    # Rewrite arguments to handle compatibility with 1.0
-    $new_args = $args | ForEach-Object {
-        if($_ -eq "--quiet") {
-            "/v:m"
-        }
-        elseif($_.StartsWith("--")) {
-            # Other unknown switch
-            Write-Warning "Unknown KoreBuild 1.0 switch: $_. If this switch took an argument, you'll have a bad problem :)"
-        } else {
-            $target = [char]::ToUpper($_[0]) + $_.Substring(1)
-            "/t:$target"
-        }
-    }
-    Write-Host -ForegroundColor DarkGray "KoreBuild 1.0 Compatibility Mode Enabled"
-    Write-Host -ForegroundColor DarkGray "KoreBuild 1.0 Command Line: $args"
-    $args = $new_args
-    Write-Host -ForegroundColor DarkGray "KoreBuild 2.0 Command Line: $args"
-}
-
 $RepositoryRoot = Convert-Path (Get-Location)
 $BuildRoot = Join-Path $RepositoryRoot ".build"
 $KoreBuildRoot = (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)))
+$ArtifactsDir = Join-Path $RepositoryRoot "artifacts"
 
 $env:REPO_FOLDER = $RepositoryRoot
 $env:KOREBUILD_FOLDER = $KoreBuildRoot
@@ -42,13 +23,25 @@ if(Test-Path $KoreBuildLog) {
     del $KoreBuildLog
 }
 
+$MSBuildLog = Join-Path $BuildRoot "korebuild.msbuild.log"
+if(Test-Path $MSBuildLog) {
+    del $MSBuildLog
+}
+
+$MSBuildResponseFile = Join-Path $BuildRoot "korebuild.msbuild.rsp"
+if(Test-Path $MSBuildResponseFile) {
+    del $MSBuildResponseFile
+}
+
+
 function exec($cmd) {
     $cmdName = [IO.Path]::GetFileName($cmd)
     Write-Host -ForegroundColor DarkGray "> $cmdName $args"
     "`r`n>>>>> $cmd $args <<<<<`r`n" >> $KoreBuildLog
-    & $cmd @args >> $KoreBuildLog
-    if($LASTEXITCODE -ne 0) {
-        throw "Command returned exit code $($LASTEXITCODE): '$cmd $args'"
+    & $cmd @args 2>&1 >> $KoreBuildLog
+    $exitCode = $LASTEXITCODE
+    if($exitCode -ne 0) {
+        throw "'$cmdName $args' failed with exit code: $exitCode. See '$ArtifactsDir\korebuild.log' for details"
     }
 }
 
@@ -109,10 +102,13 @@ function EnsureMSBuild() {
             exec dotnet restore "$KoreBuildRoot\src\Microsoft.AspNetCore.Build" -v Detailed
             exec dotnet publish "$KoreBuildRoot\src\Microsoft.AspNetCore.Build" -o "$MSBuildDir\bin\pub" -f "netcoreapp1.0"
         } catch {
+            $ex = $error[0]
             # Clean up to ensure we aren't half-initialized
             if(Test-Path $MSBuildDir) {
                 del -rec -for $MSBuildDir
             }
+
+            throw $ex
         }
     } else {
         Write-Host -ForegroundColor DarkGray "MSBuild already initialized, use -Reset to refresh it"
@@ -135,23 +131,40 @@ function EnsureTools() {
     }
 }
 
-EnsureDotNet
-EnsureMSBuild
-EnsureTools
+try {
+    EnsureDotNet
+    EnsureMSBuild
+    EnsureTools
 
-$KoreBuildTargetsRoot = "$KoreBuildRoot\src\Microsoft.AspNetCore.Build\targets"
+    $KoreBuildTargetsRoot = "$KoreBuildRoot\src\Microsoft.AspNetCore.Build\targets"
 
-# Check for a local KoreBuild project
-$Proj = Join-Path "$RepositoryRoot" "makefile.proj"
-if(!(Test-Path $Proj)) {
-    $Proj = Join-Path "$KoreBuildTargetsRoot" "makefile.proj"
+    # Check for a local KoreBuild project
+    $Proj = Join-Path "$RepositoryRoot" "makefile.proj"
+    if(!(Test-Path $Proj)) {
+        $Proj = Join-Path "$KoreBuildTargetsRoot" "makefile.proj"
+    }
+
+    $MSBuildArguments = @"
+/nologo
+"$Proj"
+/p:KoreBuildToolsPackages="$ToolsDir"
+/p:KoreBuildTargetsPath="$KoreBuildTargetsRoot"
+/p:KoreBuildTasksPath="$MSBuildDir\bin\pub"
+/fl
+/flp:LogFile="$MSBuildLog";Verbosity=diagnostic;Encoding=UTF-8
+"@
+
+    $MSBuildArguments | Out-File -Encoding ASCII -FilePath $MSBuildResponseFile
+    $args | ForEach { $_ | Out-File -Append -Encoding ASCII -FilePath $MSBuildResponseFile } # Add local args to RSP
+
+    Write-Host -ForegroundColor Green "Starting build ..."
+    Write-Host -ForegroundColor DarkGray "> msbuild $Proj $args"
+
+    & "$MSBuildDir\bin\pub\CoreRun.exe" "$MSBuildDir\bin\pub\MSBuild.exe" `@"$MSBuildResponseFile"
+} finally {
+    # Copy logs to artifacts
+    if(!(Test-Path $ArtifactsDir)) {
+        mkdir $ArtifactsDir | Out-Null
+    }
+    cp -ErrorAction SilentlyContinue $MSBuildResponseFile,$KoreBuildLog,$MSBuildLog $ArtifactsDir
 }
-
-$MSBuildLog = Join-Path $BuildRoot "korebuild.msbuild.log"
-if(Test-Path $MSBuildLog) {
-    del $MSBuildLog
-}
-
-Write-Host -ForegroundColor Green "Starting build ..."
-Write-Host -ForegroundColor DarkGray "> msbuild $Proj $args"
-& "$MSBuildDir\bin\pub\CoreRun.exe" "$MSBuildDir\bin\pub\MSBuild.exe" /nologo $NoConsoleLoggerArg $CiLoggerArg "$Proj" /p:KoreBuildToolsPackages="$ToolsDir" /p:KoreBuildTargetsPath="$KoreBuildTargetsRoot" /p:KoreBuildTasksPath="$MSBuildDir\bin\pub" /fl "/flp:logFile=$MSBuildLog;verbosity=diagnostic" @args

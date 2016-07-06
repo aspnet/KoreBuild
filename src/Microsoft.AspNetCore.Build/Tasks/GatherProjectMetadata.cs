@@ -51,7 +51,7 @@ namespace Microsoft.AspNetCore.Build.Tasks
             // Paths and stuff (directories have trailing '\' to match MSBuild conventions)
             var dir = Path.GetDirectoryName(fullPath);
             project.SetMetadata("ProjectDir", dir + Path.DirectorySeparatorChar);
-            project.SetMetadata("Name", Path.GetFileName(dir));
+            project.SetMetadata("ProjectName", Path.GetFileName(dir));
             project.SetMetadata("SharedSourcesDir", Path.Combine(dir, "shared") + Path.DirectorySeparatorChar);
             project.SetMetadata("GeneratedBuildInfoFile", Path.Combine(dir, "BuildInfo.generated.cs"));
 

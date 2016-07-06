@@ -1,3 +1,5 @@
+#Requires -Version 4
+# Don't remove the next line, it's used by Universe to detect a KoreBuild 2.0-based repo.
 # KoreBuild 2.0
 
 <#

@@ -3,11 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using NuGet.Common;
 
-namespace Microsoft.AspNetCore.Build.Tasks
+namespace Microsoft.AspNetCore.Build
 {
     public class ReplayNuGetLogger : ILogger
     {
