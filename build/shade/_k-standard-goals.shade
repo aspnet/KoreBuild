@@ -153,7 +153,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
     {
         projectGlobs.Add(TEST_PROJECT_GLOB);
     }
-    if (!BuildSrcOnly && Directory.Exists("samples"))
+    if (!BuildSrcOnly && Directory.Exists("samples") && Directory.EnumerateFiles("samples", "project.json", SearchOption.AllDirectories).Any())
     {
         projectGlobs.Add(SAMPLES_PROJECT_GLOB);
     }
