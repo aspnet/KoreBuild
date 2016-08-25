@@ -234,6 +234,26 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
     nuget-resilient-publish sourcePackagesDir='${BUILD_DIR}' nugetFeed='${E("NUGET_PUBLISH_FEED")}' if='!string.IsNullOrEmpty(E("NUGET_PUBLISH_FEED"))'
   -}
 
+#ci-test
+  @{
+     if (Directory.Exists("test"))
+     {
+       var globalJson = Path.Combine(BASE_DIR, "global.json");
+       if (File.Exists(globalJson))
+       {
+         var original = File.ReadAllText(globalJson);
+         var replaced = original.Replace("src,", null).Replace("src", null);
+         File.WriteAllText(globalJson, replaced);
+       }
+       CallTarget("initialize");
+       var projectFiles = Files.Include(TEST_PROJECT_GLOB);
+       foreach (var projectFile in projectFiles)
+       {
+         DotnetTest(projectFile, Configuration, E("KOREBUILD_DOTNET_TEST_OPTIONS"));
+       }
+     }
+  }
+
 #xunit-test target='test' if='Directory.Exists("test")'
   @{
     var projectFiles = Files.Include(TEST_PROJECT_GLOB);
