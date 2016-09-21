@@ -147,7 +147,10 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
           }
       });
 
-      projectGlobs.Add(SRC_PROJECT_GLOB);
+      if (srcProjects.Count > 0)
+      {
+        projectGlobs.Add(SRC_PROJECT_GLOB);
+      }
     }
     if (!BuildSrcOnly && Directory.Exists("test"))
     {
@@ -163,7 +166,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
       DotnetBuild(string.Join(" ", projectGlobs.ToArray()), Configuration, BuildFramework);
     }
 
-    if (srcProjects != null)
+    if (srcProjects != null && srcProjects.Count > 0)
     {
         srcProjects.ForEach(projectFile =>
         {
