@@ -202,6 +202,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
 
           foreach (var project in nativeProjects)
           {
+            Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(project), "bin"));
             Exec(msbuildPath, project + " /p:Platform=Win32" + commonParameters);
             Exec(msbuildPath, project + " /p:Platform=x64" + commonParameters);
           }
