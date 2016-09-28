@@ -165,9 +165,16 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
     {
       DotnetBuild(string.Join(" ", projectGlobs.ToArray()), Configuration, BuildFramework);
     }
+  }
 
-    if (srcProjects != null && srcProjects.Count > 0)
+#build-pack .build-compile target='compile'
+  @{
+    if (Directory.Exists("src"))
     {
+      Directory.CreateDirectory(BUILD_DIR);
+      var srcProjects = Files.Include(SRC_PROJECT_GLOB).ToList();
+      if (srcProjects != null && srcProjects.Count > 0)
+      {
         srcProjects.ForEach(projectFile =>
         {
             DotnetPack(projectFile, BUILD_DIR, Configuration, E("KOREBUILD_DOTNET_PACK_OPTIONS") + " --no-build");
@@ -177,6 +184,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
         {
             File.Copy(nupkg, Path.Combine(BUILD_DIR, Path.GetFileName(nupkg)), true);
         }
+      }
     }
   }
 
