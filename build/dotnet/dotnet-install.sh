@@ -27,16 +27,16 @@ if [ -t 1 ]; then
     # see if it supports colors
     ncolors=$(tput colors)
     if [ -n "$ncolors" ] && [ $ncolors -ge 8 ]; then
-        bold="$(tput bold)"
-        normal="$(tput sgr0)"
-        black="$(tput setaf 0)"
-        red="$(tput setaf 1)"
-        green="$(tput setaf 2)"
-        yellow="$(tput setaf 3)"
-        blue="$(tput setaf 4)"
-        magenta="$(tput setaf 5)"
-        cyan="$(tput setaf 6)"
-        white="$(tput setaf 7)"
+        bold="$(tput bold       || echo)"
+        normal="$(tput sgr0     || echo)"
+        black="$(tput setaf 0   || echo)"
+        red="$(tput setaf 1     || echo)"
+        green="$(tput setaf 2   || echo)"
+        yellow="$(tput setaf 3  || echo)"
+        blue="$(tput setaf 4    || echo)"
+        magenta="$(tput setaf 5 || echo)"
+        cyan="$(tput setaf 6    || echo)"
+        white="$(tput setaf 7   || echo)"
     fi
 fi
 
@@ -64,34 +64,47 @@ get_current_os_name() {
         echo "osx"
         return 0
     else
-        # Detect Distro
-        if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
-            if [ "$(cat /etc/*-release | grep -cim1 16.04)" -eq 1 ]; then
-                echo "ubuntu.16.04"
-                return 0
-            fi
+        if [ -e /etc/os-release ]; then
+            . /etc/os-release
 
-            echo "ubuntu"
-            return 0
-        elif [ "$(cat /etc/*-release | grep -cim1 centos)" -eq 1 ]; then
-            echo "centos"
-            return 0
-        elif [ "$(cat /etc/*-release | grep -cim1 rhel)" -eq 1 ]; then
-            echo "rhel"
-            return 0
-        elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
-            echo "debian"
-            return 0
-        elif [ "$(cat /etc/*-release | grep -cim1 fedora)" -eq 1 ]; then
-            if [ "$(cat /etc/*-release | grep -cim1 23)" -eq 1 ]; then
-                echo "fedora.23"
-                return 0
-            fi
-        elif [ "$(cat /etc/*-release | grep -cim1 opensuse)" -eq 1 ]; then
-            if [ "$(cat /etc/*-release | grep -cim1 13.2)" -eq 1 ]; then
-                echo "opensuse.13.2"
-                return 0
-            fi
+            case "$ID.$VERSION_ID" in
+                "centos.7")
+                    echo "centos"
+                    return 0
+                    ;;
+                "debian.8")
+                    echo "debian"
+                    return 0
+                    ;;
+                "fedora.23")
+                    echo "fedora.23"
+                    return 0
+                    ;;
+                "opensuse.13.2")
+                    echo "opensuse.13.2"
+                    return 0
+                    ;;
+                "opensuse.42.1")
+                    echo "opensuse.42.1"
+                    return 0
+                    ;;
+                "rhel.7.0" | "rhel.7.1" | "rhel.7.2")
+                    echo "rhel"
+                    return 0
+                    ;;
+                "ubuntu.14.04")
+                    echo "ubuntu"
+                    return 0
+                    ;;
+                "ubuntu.16.04")
+                    echo "ubuntu.16.04"
+                    return 0
+                    ;;
+                "ubuntu.16.10")
+                    echo "ubuntu.16.10"
+                    return 0
+                    ;;
+            esac
         fi
     fi
     
@@ -282,13 +295,14 @@ get_latest_version_info() {
     local azure_channel=$2
     local normalized_architecture=$3
     
-    local osname=$(get_current_os_name)
-    
+    local osname
+    osname=$(get_current_os_name) || return 1
+
     local version_file_url=null
     if [ "$shared_runtime" = true ]; then
-        version_file_url="$azure_feed/$azure_channel/dnvm/latest.sharedfx.$osname.$normalized_architecture.version"
+        version_file_url="$uncached_feed/$azure_channel/dnvm/latest.sharedfx.$osname.$normalized_architecture.version"
     else
-        version_file_url="$azure_feed/Sdk/$azure_channel/latest.version"
+        version_file_url="$uncached_feed/Sdk/$azure_channel/latest.version"
     fi
     say_verbose "get_latest_version_info: latest url: $version_file_url"
     
@@ -328,10 +342,11 @@ get_specific_version_from_version() {
     local azure_channel=$2
     local normalized_architecture=$3
     local version=$(to_lowercase $4)
-    
+
     case $version in
         latest)
-            local version_info="$(get_latest_version_info $azure_feed $azure_channel $normalized_architecture)"
+            local version_info
+	    version_info="$(get_latest_version_info $azure_feed $azure_channel $normalized_architecture)" || return 1
             say_verbose "get_specific_version_from_version: version_info=$version_info"
             echo "$version_info" | get_version_from_version_info
             return 0
@@ -360,7 +375,8 @@ construct_download_link() {
     local normalized_architecture=$3
     local specific_version=${4//[$'\t\r\n']}
     
-    local osname=$(get_current_os_name)
+    local osname
+    osname=$(get_current_os_name) || return 1
     
     local download_link=null
     if [ "$shared_runtime" = true ]; then
@@ -556,7 +572,8 @@ architecture="<auto>"
 debug_symbols=false
 dry_run=false
 no_path=false
-azure_feed="https://dotnetcli.blob.core.windows.net/dotnet"
+azure_feed="https://dotnetcli.azureedge.net/dotnet"
+uncached_feed="https://dotnetcli.blob.core.windows.net/dotnet"
 verbose=false
 shared_runtime=false
 

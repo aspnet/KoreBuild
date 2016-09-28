@@ -40,6 +40,8 @@ version=$(<$versionFile)
 
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=rel-1.0.0
 [ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
+[ -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION " ] && KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION=1.0.0
+[ -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL " ] && KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL=$KOREBUILD_DOTNET_CHANNEL
 
 if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
     echo "Skipping runtime installation because KOREBUILD_SKIP_RUNTIME_INSTALL is set"
@@ -55,6 +57,7 @@ else
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
     $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
+    $koreBuildFolder/dotnet/dotnet-install.sh --shared-runtime --channel $KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL --version $KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION
 
     # Add .NET installation directory to the path if it isn't yet included.
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"

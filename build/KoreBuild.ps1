@@ -13,8 +13,10 @@ $koreBuildFolder = $PSScriptRoot
 $koreBuildFolder = $koreBuildFolder.Replace($repoFolder, "").TrimStart("\")
 
 $dotnetVersionFile = $koreBuildFolder + "\cli.version.win"
-$dotnetChannel = "rel-1.0.0"
+$dotnetChannel = "preview"
 $dotnetVersion = Get-Content $dotnetVersionFile
+$dotnetSharedRuntimeVersion = "1.0.0"
+$dotnetSharedRuntimeChannel = $dotnetChannel
 
 if ($env:KOREBUILD_DOTNET_CHANNEL) 
 {
@@ -24,6 +26,15 @@ if ($env:KOREBUILD_DOTNET_VERSION)
 {
     $dotnetVersion = $env:KOREBUILD_DOTNET_VERSION
 }
+if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION)
+{
+    $dotnetSharedRuntimeVersion = $env:KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION 
+}
+if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL)
+{
+    $dotnetSharedRuntimeChannel = $env:KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL 
+}
+
 
 $dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\"
 $newPath = "$dotnetLocalInstallFolder;$env:PATH"
@@ -36,6 +47,7 @@ if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 else
 {
     & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
+    & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetSharedRuntimeChannel -SharedRuntime -Version $dotnetSharedRuntimeVersion
 }
 if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
 {
