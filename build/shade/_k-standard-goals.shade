@@ -223,7 +223,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
 
 #nuget-verify target='package' description='Verify if all the packages are generated properly'
   @{
-    if (!IsLinux && File.Exists(PACKAGELIST_JSON_FILENAME))
+    if (!IsLinux && Directory.Exists("src") && File.Exists(PACKAGELIST_JSON_FILENAME))
     {
         var verifierDirectory = Directory.EnumerateDirectories(Path.Combine(KoreBuildFolderPath, "NuGetPackageVerifier")).First();
         Exec(
