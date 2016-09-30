@@ -35,8 +35,12 @@ if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL)
     $dotnetSharedRuntimeChannel = $env:KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL 
 }
 
-
-$dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\"
+$dotnetLocalInstallFolder = $env:DOTNET_INSTALL_DIR
+if (!$dotnetLocalInstallFolder)
+{
+    $dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\"
+}
+ 
 $newPath = "$dotnetLocalInstallFolder;$env:PATH"
 if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1") 
 {
@@ -47,7 +51,12 @@ if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 else
 {
     & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
-    & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetSharedRuntimeChannel -SharedRuntime -Version $dotnetSharedRuntimeVersion -Architecture x64
+    # Avoid redownloading the CLI if it's already installed.
+    $sharedRuntimePath = [IO.Path]::Combine($dotnetLocalInstallFolder, 'shared', 'Microsoft.NETCore.App', $dotnetSharedRuntimeVersion)
+    if (!(Test-Path $sharedRuntimePath))
+    {
+        & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetSharedRuntimeChannel -SharedRuntime -Version $dotnetSharedRuntimeVersion -Architecture x64
+    }
 }
 if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
 {
