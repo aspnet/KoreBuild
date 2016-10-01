@@ -52,12 +52,16 @@ if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
 else
     # Need to set this variable because by default the install script
     # requires sudo
-    export DOTNET_INSTALL_DIR=~/.dotnet
+    [ -z "$DOTNET_INSTALL_DIR" ] && DOTNET_INSTALL_DIR=~/.dotnet
+    export DOTNET_INSTALL_DIR=$DOTNET_INSTALL_DIR
     export KOREBUILD_FOLDER="$(dirname $koreBuildFolder)"
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
     $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
-    $koreBuildFolder/dotnet/dotnet-install.sh --shared-runtime --channel $KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL --version $KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION
+    sharedRuntimePath="$DOTNET_INSTALL_DIR/shared/Microsoft.NETCore.App/$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION"
+    if [ -d "$sharedRuntimePath" ]; then
+        $koreBuildFolder/dotnet/dotnet-install.sh --shared-runtime --channel $KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL --version $KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION
+    fi
 
     # Add .NET installation directory to the path if it isn't yet included.
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"
