@@ -59,7 +59,7 @@ else
 
     $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
     sharedRuntimePath="$DOTNET_INSTALL_DIR/shared/Microsoft.NETCore.App/$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION"
-    if [ -d "$sharedRuntimePath" ]; then
+    if [ ! -d "$sharedRuntimePath" ]; then
         $koreBuildFolder/dotnet/dotnet-install.sh --shared-runtime --channel $KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL --version $KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION
     fi
 
