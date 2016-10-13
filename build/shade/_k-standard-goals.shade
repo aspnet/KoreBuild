@@ -44,7 +44,10 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
   @{
     Configuration = "Release";
     E("Configuration", Configuration);
-    E("KOREBUILD_ADD_ASSEMBLY_INFO", "1");
+    if (string.IsNullOrEmpty(E("KOREBUILD_ADD_ASSEMBLY_INFO")))
+    {
+      E("KOREBUILD_ADD_ASSEMBLY_INFO", "1");
+    }
     E("KOREBUILD_DOTNET_PACK_OPTIONS", E("KOREBUILD_DOTNET_PACK_OPTIONS") + " --serviceable");
     E("KOREBUILD_VERIFY_NUPKGS", "1");
   }
