@@ -17,7 +17,7 @@ show_help() {
     echo "       $0 [-r] [-b <BRANCH>] [--] [arguments to msbuild]"
     echo ""
     echo "Arguments:"
-    echo "      -r, --reset-korebuild               Delete the current `.build` directory and re-fetch KoreBuild"
+    echo "      -r, --reset-korebuild               Delete the current .build directory and re-fetch KoreBuild"
     echo "      -u, --korebuild-url <URL>           Fetch KoreBuild from URL"
     echo "      -b, --korebuild-branch <BRANCH>     Fetch KoreBuild from BRANCH in the default repository (https://github.com/aspnet/KoreBuild)"
     echo "      --korebuild-dir <DIR>               Copy KoreBuild from DIR instead of downloading it"
@@ -28,7 +28,7 @@ show_help() {
     echo "      script to MSBuild. By default, any unrecognized argument will be forwarded to MSBuild."
     echo ""
     echo "      If you wish to build a specific target from the MSBuild project file, use the '-t:<TARGET>' switch, which will be forwarded"
-    echo "      to MSBuild. For example `.\build.sh -t:Verify`"
+    echo "      to MSBuild. For example ./build.sh -t:Verify"
 }
 
 while [[ $# > 0 ]]; do
@@ -88,7 +88,7 @@ if [ ! -d $BUILD_FOLDER ]; then
     else
         echo -e "${GREEN}Downloading KoreBuild from $KOREBUILD_URL ...${RESET}"
 
-        KOREBUILD_DIR=`mktemp -d`
+        KOREBUILD_DIR=$(mktemp -d)
         KOREBUILD_TAR="$KOREBUILD_DIR/korebuild.tar.gz"
 
         retries=6
