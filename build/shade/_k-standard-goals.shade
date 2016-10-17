@@ -57,7 +57,10 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
     // Find all dirs that contain a package.json file
     var npmDirs = GetDirectoriesContaining(Directory.GetCurrentDirectory(), "package.json").ToArray();
     var npmOptions = E("KOREBUILD_NPM_INSTALL_OPTIONS") ?? "--quiet --depth 0";
-    Parallel.ForEach(npmDirs, npmDir => Npm("install " + npmOptions, npmDir));
+    foreach (var npmDir in npmDirs)
+    {
+        Npm("install " + npmOptions, npmDir);
+    }
   }
 
 #restore-bower-components
