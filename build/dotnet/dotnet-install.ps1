@@ -45,12 +45,12 @@
 .PARAMETER Verbose
     Displays diagnostics information.
 .PARAMETER AzureFeed
-    Default: https://dotnetcli.azureedge.net/dotnet
+    Default: https://dotnetcli.blob.core.windows.net/dotnet
     This parameter should not be usually changed by user. It allows to change URL for the Azure feed used by this installer.
 #>
 [cmdletbinding()]
 param(
-   [string]$Channel="rel-1.0.0",
+   [string]$Channel="preview",
    [string]$Version="Latest",
    [string]$InstallDir="<auto>",
    [string]$Architecture="<auto>",
@@ -58,8 +58,7 @@ param(
    [switch]$DebugSymbols, # TODO: Switch does not work yet. Symbols zip is not being uploaded yet.
    [switch]$DryRun,
    [switch]$NoPath,
-   [string]$AzureFeed="https://dotnetcli.azureedge.net/dotnet",
-   [string]$UncachedFeed="https://dotnetcli.blob.core.windows.net/dotnet"
+   [string]$AzureFeed="https://dotnetcli.blob.core.windows.net/dotnet"
 )
 
 Set-StrictMode -Version Latest
@@ -116,65 +115,25 @@ function Get-Version-Info-From-Version-Text([string]$VersionText) {
     return $VersionInfo
 }
 
-function Load-Assembly([string] $Assembly) {
-    try {
-        Add-Type -Assembly $Assembly | Out-Null
-    }
-    catch {
-        # On Nano Server, Powershell Core Edition is used.  Add-Type is unable to resolve base class assemblies because they are not GAC'd.
-        # Loading the base class assemblies is not unnecessary as the types will automatically get resolved.
-    }
-}
-
-function GetHTTPResponse([Uri] $Uri)
-{
-    $HttpClient = $null
-
-    try {
-        # HttpClient is used vs Invoke-WebRequest in order to support Nano Server which doesn't support the Invoke-WebRequest cmdlet.
-        Load-Assembly -Assembly System.Net.Http
-        $HttpClient = New-Object System.Net.Http.HttpClient
-        $Response = $HttpClient.GetAsync($Uri).Result
-        if (($Response -eq $null) -or (-not ($Response.IsSuccessStatusCode)))
-        {
-            $ErrorMsg = "Failed to download $Uri."
-            if ($Response -ne $null)
-            {
-                $ErrorMsg += "  $Response"
-            }
-
-            throw $ErrorMsg
-        }
-
-        return $Response
-    }
-    finally {
-        if ($HttpClient -ne $null) {
-            $HttpClient.Dispose()
-        }
-    }
-}
-
-
 function Get-Latest-Version-Info([string]$AzureFeed, [string]$AzureChannel, [string]$CLIArchitecture) {
     Say-Invocation $MyInvocation
 
     $VersionFileUrl = $null
     if ($SharedRuntime) {
-        $VersionFileUrl = "$UncachedFeed/$AzureChannel/dnvm/latest.sharedfx.win.$CLIArchitecture.version"
+        $VersionFileUrl = "$AzureFeed/$AzureChannel/dnvm/latest.sharedfx.win.$CLIArchitecture.version"
     }
     else {
-        $VersionFileUrl = "$UncachedFeed/Sdk/$AzureChannel/latest.version"
+        $VersionFileUrl = "$AzureFeed/$AzureChannel/dnvm/latest.win.$CLIArchitecture.version"
     }
     
-    $Response = GetHTTPResponse -Uri $VersionFileUrl
-    $StringContent = $Response.Content.ReadAsStringAsync().Result
+    $Response = Invoke-WebRequest -UseBasicParsing $VersionFileUrl
 
-    switch ($Response.Content.Headers.ContentType) {
-        { ($_ -eq "application/octet-stream") } { $VersionText = [Text.Encoding]::UTF8.GetString($StringContent) }
-        { ($_ -eq "text/plain") } { $VersionText = $StringContent }
-        default { throw "``$Response.Content.Headers.ContentType`` is an unknown .version file content type." }
+    switch ($Response.Headers.'Content-Type'){
+        { ($_ -eq "application/octet-stream") } { $VersionText = [Text.Encoding]::UTF8.GetString($Response.Content) }
+        { ($_ -eq "text/plain") } { $VersionText = $Response.Content }
+        default { throw "``$Response.Headers.'Content-Type'`` is an unknown .version file content type." }
     }
+    
 
     $VersionInfo = Get-Version-Info-From-Version-Text $VersionText
 
@@ -188,8 +147,10 @@ function Get-Azure-Channel-From-Channel([string]$Channel) {
     # For compatibility with build scripts accept also directly Azure channels names
     switch ($Channel.ToLower()) {
         { ($_ -eq "future") -or ($_ -eq "dev") } { return "dev" }
+        { ($_ -eq "beta") } { return "beta" }
+        { ($_ -eq "preview") } { return "preview" }
         { $_ -eq "production" } { throw "Production channel does not exist yet" }
-        default { return $_ }
+        default { throw "``$Channel`` is an invalid channel name. Use one of the following: ``future``, ``preview``, ``production``" }
     }
 }
 
@@ -210,16 +171,19 @@ function Get-Download-Links([string]$AzureFeed, [string]$AzureChannel, [string]$
     Say-Invocation $MyInvocation
     
     $ret = @()
-    
+    $files = @()
     if ($SharedRuntime) {
-        $PayloadURL = "$AzureFeed/$AzureChannel/Binaries/$SpecificVersion/dotnet-win-$CLIArchitecture.$SpecificVersion.zip"
+        $files += "dotnet";
     }
     else {
-        $PayloadURL = "$AzureFeed/Sdk/$SpecificVersion/dotnet-dev-win-$CLIArchitecture.$SpecificVersion.zip"
+        $files += "dotnet-dev";
     }
-
-    Say-Verbose "Constructed payload URL: $PayloadURL"
-    $ret += $PayloadURL
+    
+    foreach ($file in $files) {
+        $PayloadURL = "$AzureFeed/$AzureChannel/Binaries/$SpecificVersion/$file-win-$CLIArchitecture.$SpecificVersion.zip"
+        Say-Verbose "Constructed payload URL: $PayloadURL"
+        $ret += $PayloadURL
+    }
 
     return $ret
 }
@@ -322,7 +286,7 @@ function Get-List-Of-Directories-And-Versions-To-Unpack-From-Dotnet-Package([Sys
 function Extract-Dotnet-Package([string]$ZipPath, [string]$OutPath) {
     Say-Invocation $MyInvocation
 
-    Load-Assembly -Assembly System.IO.Compression.FileSystem
+    Add-Type -Assembly System.IO.Compression.FileSystem | Out-Null
     Set-Variable -Name Zip
     try {
         $Zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
@@ -345,23 +309,6 @@ function Extract-Dotnet-Package([string]$ZipPath, [string]$OutPath) {
     finally {
         if ($Zip -ne $null) {
             $Zip.Dispose()
-        }
-    }
-}
-
-function DownloadFile([Uri]$Uri, [string]$OutPath) {
-    $Stream = $null
-
-    try {
-        $Response = GetHTTPResponse -Uri $Uri
-        $Stream = $Response.Content.ReadAsStreamAsync().Result
-        $File = [System.IO.File]::Create($OutPath)
-        $Stream.CopyTo($File)
-        $File.Close()
-    }
-    finally {
-        if ($Stream -ne $null) {
-            $Stream.Dispose()
         }
     }
 }
@@ -395,7 +342,7 @@ New-Item -ItemType Directory -Force -Path $InstallRoot | Out-Null
 foreach ($DownloadLink in $DownloadLinks) {
     $ZipPath = [System.IO.Path]::GetTempFileName()
     Say "Downloading $DownloadLink"
-    DownloadFile -Uri $DownloadLink -OutPath $ZipPath
+    $resp = Invoke-WebRequest -UseBasicParsing $DownloadLink -OutFile $ZipPath
 
     Say "Extracting zip from $DownloadLink"
     Extract-Dotnet-Package -ZipPath $ZipPath -OutPath $InstallRoot
