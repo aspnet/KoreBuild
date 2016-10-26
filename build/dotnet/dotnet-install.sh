@@ -27,16 +27,16 @@ if [ -t 1 ]; then
     # see if it supports colors
     ncolors=$(tput colors)
     if [ -n "$ncolors" ] && [ $ncolors -ge 8 ]; then
-        bold="$(tput bold)"
-        normal="$(tput sgr0)"
-        black="$(tput setaf 0)"
-        red="$(tput setaf 1)"
-        green="$(tput setaf 2)"
-        yellow="$(tput setaf 3)"
-        blue="$(tput setaf 4)"
-        magenta="$(tput setaf 5)"
-        cyan="$(tput setaf 6)"
-        white="$(tput setaf 7)"
+        bold="$(tput bold       || echo)"
+        normal="$(tput sgr0     || echo)"
+        black="$(tput setaf 0   || echo)"
+        red="$(tput setaf 1     || echo)"
+        green="$(tput setaf 2   || echo)"
+        yellow="$(tput setaf 3  || echo)"
+        blue="$(tput setaf 4    || echo)"
+        magenta="$(tput setaf 5 || echo)"
+        cyan="$(tput setaf 6    || echo)"
+        white="$(tput setaf 7   || echo)"
     fi
 fi
 
@@ -80,6 +80,10 @@ get_current_os_name() {
                     echo "fedora.23"
                     return 0
                     ;;
+                "fedora.24")
+                    echo "fedora.24"
+                    return 0
+                    ;;
                 "opensuse.13.2")
                     echo "opensuse.13.2"
                     return 0
@@ -104,11 +108,15 @@ get_current_os_name() {
                     echo "ubuntu.16.10"
                     return 0
                     ;;
+                "alpine.3.4.3")
+                    echo "alpine"
+                    return 0
+                    ;;
             esac
         fi
     fi
     
-    say_err "OS name could not be detected"
+    say_err "OS name could not be detected: $ID.$VERSION_ID"
     return 1
 }
 
@@ -295,9 +303,15 @@ get_latest_version_info() {
     local azure_channel=$2
     local normalized_architecture=$3
     
-    local osname=$(get_current_os_name)
-    
-    local version_file_url="$azure_feed/$azure_channel/dnvm/latest.$osname.$normalized_architecture.version"
+    local osname
+    osname=$(get_current_os_name) || return 1
+
+    local version_file_url=null
+    if [ "$shared_runtime" = true ]; then
+        version_file_url="$uncached_feed/$azure_channel/dnvm/latest.sharedfx.$osname.$normalized_architecture.version"
+    else
+        version_file_url="$uncached_feed/Sdk/$azure_channel/latest.version"
+    fi
     say_verbose "get_latest_version_info: latest url: $version_file_url"
     
     download $version_file_url
@@ -315,21 +329,13 @@ get_azure_channel_from_channel() {
             echo "dev"
             return 0
             ;;
-        beta)
-            echo "beta"
-            return 0
-            ;;
-        preview)
-            echo "preview"
-            return 0
-            ;;
         production)
             say_err "Production channel does not exist yet"
             return 1
     esac
     
-    say_err "``$1`` is an invalid channel name. Use one of the following: ``future``, ``preview``, ``production``"
-    return 1
+	echo $channel
+    return 0
 }
 
 # args:
@@ -344,10 +350,11 @@ get_specific_version_from_version() {
     local azure_channel=$2
     local normalized_architecture=$3
     local version=$(to_lowercase $4)
-    
+
     case $version in
         latest)
-            local version_info="$(get_latest_version_info $azure_feed $azure_channel $normalized_architecture)"
+            local version_info
+	    version_info="$(get_latest_version_info $azure_feed $azure_channel $normalized_architecture)" || return 1
             say_verbose "get_specific_version_from_version: version_info=$version_info"
             echo "$version_info" | get_version_from_version_info
             return 0
@@ -376,9 +383,16 @@ construct_download_link() {
     local normalized_architecture=$3
     local specific_version=${4//[$'\t\r\n']}
     
-    local osname=$(get_current_os_name)
+    local osname
+    osname=$(get_current_os_name) || return 1
     
-    local download_link="$azure_feed/$azure_channel/Binaries/$specific_version/dotnet-dev-$osname-$normalized_architecture.$specific_version.tar.gz"
+    local download_link=null
+    if [ "$shared_runtime" = true ]; then
+        download_link="$azure_feed/$azure_channel/Binaries/$specific_version/dotnet-$osname-$normalized_architecture.$specific_version.tar.gz"
+    else
+        download_link="$azure_feed/Sdk/$specific_version/dotnet-dev-$osname-$normalized_architecture.$specific_version.tar.gz"
+    fi
+    
     echo "$download_link"
     return 0
 }
@@ -559,15 +573,17 @@ local_version_file_relative_path="/.version"
 bin_folder_relative_path=""
 temporary_file_template="${TMPDIR:-/tmp}/dotnet.XXXXXXXXX"
 
-channel="preview"
+channel="rel-1.0.0"
 version="Latest"
 install_dir="<auto>"
 architecture="<auto>"
 debug_symbols=false
 dry_run=false
 no_path=false
-azure_feed="https://dotnetcli.blob.core.windows.net/dotnet"
+azure_feed="https://dotnetcli.azureedge.net/dotnet"
+uncached_feed="https://dotnetcli.blob.core.windows.net/dotnet"
 verbose=false
+shared_runtime=false
 
 while [ $# -ne 0 ]
 do
@@ -588,6 +604,9 @@ do
         --arch|--architecture|-[Aa]rch|-[Aa]rchitecture)
             shift
             architecture="$1"
+            ;;
+        --shared-runtime|-[Ss]hared[Rr]untime)
+            shared_runtime=true
             ;;
         --debug-symbols|-[Dd]ebug[Ss]ymbols)
             debug_symbols=true
@@ -622,6 +641,8 @@ do
             echo "      -InstallDir"
             echo "  --architecture <ARCHITECTURE>  Architecture of .NET Tools. Currently only x64 is supported."
             echo "      --arch,-Architecture,-Arch"
+            echo "  --shared-runtime               Installs just the shared runtime bits, not the entire SDK."
+            echo "      -SharedRuntime"
             echo "  --debug-symbols,-DebugSymbols  Specifies if symbols should be included in the installation."
             echo "  --dry-run,-DryRun              Do not perform installation. Display download link."
             echo "  --no-path, -NoPath             Do not set PATH for the current process."
@@ -664,4 +685,4 @@ else
     say "Binaries of dotnet can be found in $bin_path"
 fi
 
-say "Installation finished successfuly."
+say "Installation finished successfully."
