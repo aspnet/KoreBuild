@@ -1,4 +1,5 @@
 use import="Environment"
+use import="Json"
 
 default NO_PARALLEL_TEST_PROJECTS='${E("NO_PARALLEL_TEST_PROJECTS")}'
 
@@ -20,8 +21,10 @@ default test_options=''
 
 @{
     var content = File.ReadAllText(projectFile);
+    var project = (JsonObject)Json.Deserialize(content);
+    var netCoreAppTfm = GetNETCoreAppTFM(project);
     // Desktop tests only work on Windows. Only run the test on xplat if it has a netcoreapp1.0 TFM.
-    if (content.Contains("\"testRunner\"") && (!IsLinux || content.Contains("netcoreapp1.0")))
+    if (project.Value("testRunner") != null && (!IsLinux || netCoreAppTfm != null))
     {
         var projectFolder = Path.GetDirectoryName(projectFile);
         var projectName = Path.GetFileName(projectFolder);
@@ -35,7 +38,7 @@ default test_options=''
         var testArgs = test_options + " --configuration " + configuration;
         if (IsLinux)
         {
-            testArgs += " -f netcoreapp1.0";
+            testArgs += " -f " + netCoreAppTfm;
         }
 
         testArgs += noParallelTestProjects.Contains(projectName) ? " -parallel none" : "";
@@ -55,3 +58,15 @@ default test_options=''
     }
 }
 
+functions @{
+    private static string GetNETCoreAppTFM(JsonObject project)
+    {
+        var frameworks = project.ValueAsJsonObject("frameworks");
+        if (frameworks != null)
+        {
+            return frameworks.Keys.FirstOrDefault(key => key.StartsWith("netcoreapp"));
+        }
+
+        return null;
+    }
+}
