@@ -377,8 +377,12 @@ construct_download_link() {
     local specific_version=${4//[$'\t\r\n']}
     
     local osname=$(get_current_os_name)
-    
-    local download_link="$azure_feed/$azure_channel/Binaries/$specific_version/dotnet-dev-$osname-$normalized_architecture.$specific_version.tar.gz"
+    local download_link=null
+    if [ "$shared_runtime" = true ]; then
+        download_link="$azure_feed/$azure_channel/Binaries/$specific_version/dotnet-$osname-$normalized_architecture.$specific_version.tar.gz"
+    else
+        download_link="$azure_feed/$azure_channel/Binaries/$specific_version/dotnet-dev-$osname-$normalized_architecture.$specific_version.tar.gz"
+    fi
     echo "$download_link"
     return 0
 }
@@ -568,6 +572,7 @@ dry_run=false
 no_path=false
 azure_feed="https://dotnetcli.blob.core.windows.net/dotnet"
 verbose=false
+shared_runtime=false
 
 while [ $# -ne 0 ]
 do
@@ -588,6 +593,9 @@ do
         --arch|--architecture|-[Aa]rch|-[Aa]rchitecture)
             shift
             architecture="$1"
+            ;;
+        --shared-runtime|-[Ss]hared[Rr]untime)
+            shared_runtime=true
             ;;
         --debug-symbols|-[Dd]ebug[Ss]ymbols)
             debug_symbols=true
