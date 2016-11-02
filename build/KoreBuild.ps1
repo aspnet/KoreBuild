@@ -14,18 +14,18 @@ $dotnetVersionFile = $koreBuildFolder + "\cli.version.win"
 $dotnetChannel = "preview"
 $dotnetVersion = Get-Content $dotnetVersionFile
 
-if ($env:KOREBUILD_DOTNET_CHANNEL) 
+if ($env:KOREBUILD_DOTNET_CHANNEL)
 {
     $dotnetChannel = $env:KOREBUILD_DOTNET_CHANNEL
 }
-if ($env:KOREBUILD_DOTNET_VERSION) 
+if ($env:KOREBUILD_DOTNET_VERSION)
 {
     $dotnetVersion = $env:KOREBUILD_DOTNET_VERSION
 }
 
 $dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\"
 $newPath = "$dotnetLocalInstallFolder;$env:PATH"
-if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1") 
+if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 {
     Write-Host "Skipping runtime installation because KOREBUILD_SKIP_RUNTIME_INSTALL = 1"
     # Add to the _end_ of the path in case preferred .NET CLI is not in the default location.
@@ -33,6 +33,9 @@ if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 }
 else
 {
+    # Install an MSBuild version of dotnet-cli
+    & "$koreBuildFolder/dotnet/dotnet-install.ps1" -InstallDir "$koreBuildFolder/dotnet" -Version (Get-Content "$koreBuildFolder\cli.version.msbuild") -Architecture x64 -Channel "rel-1.0.0"
+    # Install the version of dotnet-cli used to compile
     & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
 }
 if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
@@ -45,14 +48,14 @@ if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
 $sharedPath = (Join-Path (Split-Path ((get-command dotnet.exe).Path) -Parent) "shared");
 (Get-ChildItem $sharedPath -Recurse *dotnet.exe) | %{ $_.FullName } | Remove-Item;
 
-if (!(Test-Path "$koreBuildFolder\Sake")) 
+if (!(Test-Path "$koreBuildFolder\Sake"))
 {
     $toolsProject = "$koreBuildFolder\project.json"
     if (!(Test-Path $toolsProject))
     {
         if (Test-Path "$toolsProject.norestore")
         {
-            mv "$toolsProject.norestore" "$toolsProject" 
+            mv "$toolsProject.norestore" "$toolsProject"
         }
         else
         {
@@ -67,7 +70,7 @@ if (!(Test-Path "$koreBuildFolder\Sake"))
 }
 
 $makeFilePath = "makefile.shade"
-if (!(Test-Path $makeFilePath)) 
+if (!(Test-Path $makeFilePath))
 {
     $makeFilePath = "$koreBuildFolder\shade\makefile.shade"
 }
