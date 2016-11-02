@@ -81,6 +81,17 @@ if [ ! -d $sakeFolder ]; then
     mv "$toolsProject" "$toolsProject.norestore"
 fi
 
+netFrameworkFolder=$repoFolder/$koreBuildFolder/NETFrameworkReferenceAssemblies
+netFrameworkContentDir=$netFrameworkFolder/4.6.0/content
+if [ ! -d $netFrameworkFolder ]; then
+    xplatToolsProject="$koreBuildFolder/xplat.project.json"
+    dotnet restore "$xplatToolsProject" --packages $scriptRoot -v Minimal
+    # Rename the project after restore because we don't want it to be restore afterwards
+   mv $xplatToolsProject $xplatToolsProject.norestore
+fi
+
+export DOTNET_REFERENCE_ASSEMBLIES_PATH=$netFrameworkContentDir
+
 nugetPath="$koreBuildFolder/nuget.exe"
 if [ ! -f $nugetPath ]; then
     nugetUrl="https://dist.nuget.org/win-x86-commandline/v3.5.0-beta2/NuGet.exe"
