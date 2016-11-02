@@ -55,7 +55,7 @@ else
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
     # Install an MSBuild version of dotnet-cli
-    $koreBuildFolder/dotnet/dotnet-install.sh --install-dir "$koreBuildFolder/dotnet" --channel rel-1.0.0 --version $(cat $koreBuildFolder/cli.version.msbuild)
+    $koreBuildFolder/dotnet/dotnet-install.1.0.sh --install-dir "$koreBuildFolder/dotnet" --channel rel-1.0.0 --version $(cat $koreBuildFolder/cli.version.msbuild)
 
     # Install the version of dotnet-cli used to compile
     $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
