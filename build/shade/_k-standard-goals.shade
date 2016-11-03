@@ -263,6 +263,11 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
         var configFile = Path.Combine(targetDir, projectName + ".runtimeconfig.json");
         var assembly = Path.Combine(targetDir, projectName + ".dll");
         var msbuildDotnet = Path.Combine(BASE_DIR, ".build/dotnet/dotnet");
+        if (!File.Exists(configFile))
+        {
+          continue;
+        }
+
         Exec(msbuildDotnet, string.Format(
                 @"exec --depsfile ""{0}"" --runtimeconfig ""{1}"" ""{2}"" ""{3}"" {4}",
                 depsFile,
