@@ -3,6 +3,7 @@
       "net451": { }
   },
   "dependencies": {
-      "NuGetPackageVerifier": "1.0.1-*"
+      "NuGetPackageVerifier": "1.0.1-*",
+      "ApiCheck": "1.0.1-*"
   }
 }
