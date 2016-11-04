@@ -1,7 +1,7 @@
 default PROJECT_JSON="project.json"
 
 @{
-    var srcFolders = Directory.EnumerateDirectories(Path.Combine(BASE_DIR, ".\\src"));
+    var srcFolders = Directory.EnumerateDirectories(Path.Combine(BASE_DIR, "src"));
 
     var fullFrameworkMonikerPrefix = new string[] { "net45", "net46" };
     var coreMonikerPrefix = new string[] { "netcoreapp", "netstandard" };
@@ -15,7 +15,11 @@ default PROJECT_JSON="project.json"
             continue;
         }
 
-        RunApiCheck(srcDirectory, projectJson.FullName, Configuration, fullFrameworkMonikerPrefix, "net45");
+        if (!IsLinux)
+        {
+            RunApiCheck(srcDirectory, projectJson.FullName, Configuration, fullFrameworkMonikerPrefix, "net45");
+        }
+
         RunApiCheck(srcDirectory, projectJson.FullName, Configuration, coreMonikerPrefix, "netcore");
     }
 }
@@ -25,9 +29,9 @@ functions @{
     string GenerateApiCheckInvoker(string framework)
     {
         var BASE_DIR = Directory.GetCurrentDirectory();
-        var apiCheckFullFramework = new FileInfo(Path.Combine(BASE_DIR, ".build\\ApiCheck\\tools\\net452\\ApiCheck.exe"));
+        var apiCheckFullFramework = new FileInfo(Path.Combine(BASE_DIR, ".build", "ApiCheck", "tools", "net452", "ApiCheck.exe"));
 
-        if(framework == "net45")
+        if (framework == "net45")
         {
             return apiCheckFullFramework.FullName;
         }
@@ -40,9 +44,9 @@ functions @{
     IList<string> GenerateApiCheckArguments(string framework, params string [] other)
     {
         var BASE_DIR = Directory.GetCurrentDirectory();
-        var apiCheckCore = new FileInfo(Path.Combine(BASE_DIR, ".build\\ApiCheck\\tools\\netcoreapp1.0\\ApiCheck.dll"));
+        var apiCheckCore = new FileInfo(Path.Combine(BASE_DIR, ".build", "ApiCheck", "tools", "netcoreapp1.0", "ApiCheck.dll"));
 
-        if(framework == "net45")
+        if (framework == "net45")
         {
             return other.ToList();
         }
@@ -63,15 +67,14 @@ functions @{
         var apiListingExceptionsFile = framework == "net45" ? "exceptions.net45.json" : "exceptions.netcore.json";
 
         var buildFolder = new DirectoryInfo(Path.Combine(directoryInfo.FullName, "bin", configuration));
+        if (!buildFolder.Exists)
+        {
+            return;
+        }
 
         FileInfo dll = null;
         foreach (var prefix in monikerPrefix)
         {
-            if (!buildFolder.Exists)
-            {
-                break;
-            }
-
             var frameworkDirectory = buildFolder.EnumerateDirectories(string.Concat(prefix,"*")).FirstOrDefault();
             if (frameworkDirectory != null && frameworkDirectory.EnumerateDirectories().Any())
             {
@@ -130,7 +133,7 @@ functions @{
                     arguments.Add("-epi");
                 }
 
-                Exec(GenerateApiCheckInvoker(framework), string.Join(" ",arguments));
+                Exec(GenerateApiCheckInvoker(framework), string.Join(" ", arguments));
             }
         }
     }
