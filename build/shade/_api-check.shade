@@ -65,32 +65,37 @@ functions @{
         var buildFolder = new DirectoryInfo(Path.Combine(directoryInfo.FullName, "bin", configuration));
 
         FileInfo dll = null;
-        foreach(var prefix in monikerPrefix)
+        foreach (var prefix in monikerPrefix)
         {
+            if (!buildFolder.Exists)
+            {
+                break;
+            }
+
             var frameworkDirectory = buildFolder.EnumerateDirectories(string.Concat(prefix,"*")).FirstOrDefault();
-            if(frameworkDirectory != null && frameworkDirectory.EnumerateDirectories().Any())
+            if (frameworkDirectory != null && frameworkDirectory.EnumerateDirectories().Any())
             {
                 frameworkDirectory = frameworkDirectory.EnumerateDirectories().FirstOrDefault(d =>
                     d.EnumerateFiles(string.Concat(directoryInfo.Name,".dll")).Any());
             }
 
-            if(frameworkDirectory != null)
+            if (frameworkDirectory != null)
             {
                 dll = frameworkDirectory.EnumerateFiles(string.Concat(directoryInfo.Name,".dll")).FirstOrDefault();
-                if(dll != null)
+                if (dll != null)
                 {
                     break;
                 }
             }
         }
 
-        if(dll != null)
+        if (dll != null)
         {
             var apiListing = directoryInfo.EnumerateFiles(apiListingFile).FirstOrDefault();
             var apiListingExceptions = directoryInfo.EnumerateFiles(apiListingExceptionsFile).FirstOrDefault();
 
             var generate = Environment.GetEnvironmentVariable("APICHECK_GENERATE_BASELINE");
-            if(!string.IsNullOrEmpty(generate))
+            if (!string.IsNullOrEmpty(generate))
             {
                 var arguments = GenerateApiCheckArguments(framework,
                     "generate",
@@ -101,7 +106,7 @@ functions @{
 
                 Exec(GenerateApiCheckInvoker(framework), string.Join(" ",arguments));
             }
-            else if(apiListing == null)
+            else if (apiListing == null)
             {
                 Log.Info("API listing not found for: " + dll.FullName);
             }
@@ -114,12 +119,12 @@ functions @{
                     "-p " + projectJson,
                     "-c " + configuration);
                 
-                if(apiListingExceptions != null)
+                if (apiListingExceptions != null)
                 {
                     arguments.Add("-e " + apiListingExceptions.FullName);
                 }
 
-                if(Environment.GetEnvironmentVariable("APICHECK_EXCLUDE_PUBLIC_INTERNAL_TYPES") != null)
+                if (Environment.GetEnvironmentVariable("APICHECK_EXCLUDE_PUBLIC_INTERNAL_TYPES") != null)
                 {
                     // Excludes types in the internal namespace
                     arguments.Add("-epi");
