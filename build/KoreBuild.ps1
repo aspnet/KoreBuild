@@ -12,7 +12,7 @@ cd $repoFolder
 $koreBuildFolder = $PSScriptRoot
 $koreBuildFolder = $koreBuildFolder.Replace($repoFolder, "").TrimStart("\")
 
-$dotnetVersionFile = $koreBuildFolder + "\cli.version.win"
+$dotnetVersionFile = $koreBuildFolder + "\cli.version"
 $dotnetChannel = "preview"
 $dotnetVersion = Get-Content $dotnetVersionFile
 $dotnetSharedRuntimeVersion = "1.0.0"
