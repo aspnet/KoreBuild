@@ -30,12 +30,7 @@ scriptRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 koreBuildFolder="${scriptRoot/$repoFolder/}"
 koreBuildFolder="${koreBuildFolder#/}"
 
-if test `uname` = Darwin; then
-    versionFileName="cli.version.darwin"
-else
-    versionFileName="cli.version.unix"
-fi
-versionFile="$koreBuildFolder/$versionFileName"
+versionFile="$koreBuildFolder/cli.version"
 version=$(<$versionFile)
 
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=preview
