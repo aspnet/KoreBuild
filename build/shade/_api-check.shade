@@ -1,7 +1,9 @@
 default PROJECT_JSON="project.json"
 
 @{
-    var srcFolders = Directory.EnumerateDirectories(Path.Combine(BASE_DIR, "src"));
+
+    var srcRoot = Path.Combine(BASE_DIR, "src");
+    var srcFolders = Directory.Exists(srcRoot) ? Directory.EnumerateDirectories(srcRoot) : Enumerable.Empty<string>();
 
     var fullFrameworkMonikerPrefix = new string[] { "net45", "net46" };
     var coreMonikerPrefix = new string[] { "netcoreapp", "netstandard" };
@@ -9,6 +11,11 @@ default PROJECT_JSON="project.json"
     foreach (var srcProjectPath in srcFolders)
     {
         var srcDirectory = new DirectoryInfo(srcProjectPath);
+        if (!srcDirectory.Exists)
+        {
+            break;
+        }
+
         var projectJson = new FileInfo(Path.Combine(srcDirectory.FullName, PROJECT_JSON));
         if (!projectJson.Exists)
         {
