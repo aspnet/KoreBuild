@@ -29,7 +29,7 @@ functions @{
     string GenerateApiCheckInvoker(string framework)
     {
         var BASE_DIR = Directory.GetCurrentDirectory();
-        var apiCheckFullFramework = new FileInfo(Path.Combine(BASE_DIR, ".build", "Microsoft.AspNetCore.BuildTools.ApiCheck", "tools", "net452", "Microsoft.AspNetCore.BuildTools.ApiCheck.exe"));
+        var apiCheckFullFramework = new FileInfo(Path.Combine(BASE_DIR, ".build", "Microsoft.AspNetCore.BuildTools.ApiCheck", "tools", "net451", "Microsoft.AspNetCore.BuildTools.ApiCheck.exe"));
 
         if (framework == "net45")
         {
