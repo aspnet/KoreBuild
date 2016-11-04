@@ -8,6 +8,9 @@ default PROJECT_JSON="project.json"
     var fullFrameworkMonikerPrefix = new string[] { "net45", "net46" };
     var coreMonikerPrefix = new string[] { "netcoreapp", "netstandard" };
 
+    var generateApiListing = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APICHECK_GENERATE_BASELINE"));
+    var excludePublicInternalTypes = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APICHECK_INCLUDE_PUBLIC_INTERNAL_TYPES"));
+
     foreach (var srcProjectPath in srcFolders)
     {
         var srcDirectory = new DirectoryInfo(srcProjectPath);
@@ -24,10 +27,10 @@ default PROJECT_JSON="project.json"
 
         if (!IsLinux)
         {
-            RunApiCheck(srcDirectory, projectJson.FullName, Configuration, fullFrameworkMonikerPrefix, "net45");
+            RunApiCheck(srcDirectory, projectJson.FullName, Configuration, fullFrameworkMonikerPrefix, "net45", generateApiListing, excludePublicInternalTypes);
         }
 
-        RunApiCheck(srcDirectory, projectJson.FullName, Configuration, coreMonikerPrefix, "netcore");
+        RunApiCheck(srcDirectory, projectJson.FullName, Configuration, coreMonikerPrefix, "netcore", generateApiListing, excludePublicInternalTypes);
     }
 }
 
@@ -36,7 +39,8 @@ functions @{
     string GenerateApiCheckInvoker(string framework)
     {
         var BASE_DIR = Directory.GetCurrentDirectory();
-        var apiCheckFullFramework = new FileInfo(Path.Combine(BASE_DIR, ".build", "Microsoft.AspNetCore.BuildTools.ApiCheck", "tools", "net451", "Microsoft.AspNetCore.BuildTools.ApiCheck.exe"));
+        var apicheckBasePath = Directory.EnumerateDirectories(Path.Combine(BASE_DIR, ".build", "Microsoft.AspNetCore.BuildTools.ApiCheck")).First();
+        var apiCheckFullFramework = new FileInfo(Path.Combine(apicheckBasePath, "tools", "net451", "Microsoft.AspNetCore.BuildTools.ApiCheck.exe"));
 
         if (framework == "net45")
         {
@@ -51,7 +55,8 @@ functions @{
     IList<string> GenerateApiCheckArguments(string framework, params string [] other)
     {
         var BASE_DIR = Directory.GetCurrentDirectory();
-        var apiCheckCore = new FileInfo(Path.Combine(BASE_DIR, ".build", "Microsoft.AspNetCore.BuildTools.ApiCheck", "tools", "netcoreapp1.0", "Microsoft.AspNetCore.BuildTools.ApiCheck.dll"));
+        var apicheckBasePath = Directory.EnumerateDirectories(Path.Combine(BASE_DIR, ".build", "Microsoft.AspNetCore.BuildTools.ApiCheck")).First();
+        var apiCheckCore = new FileInfo(Path.Combine(apicheckBasePath, "tools", "netcoreapp1.0", "Microsoft.AspNetCore.BuildTools.ApiCheck.dll"));
 
         if (framework == "net45")
         {
@@ -68,7 +73,9 @@ functions @{
         string projectJson,
         string configuration,
         string[] monikerPrefix,
-        string framework)
+        string framework,
+        bool generate,
+        bool excludePublicInternalTypes)
     {
         var apiListingFile = framework == "net45" ? "baseline.net45.json" : "baseline.netcore.json";
         var apiListingExceptionsFile = framework == "net45" ? "exceptions.net45.json" : "exceptions.netcore.json";
@@ -104,8 +111,7 @@ functions @{
             var apiListing = directoryInfo.EnumerateFiles(apiListingFile).FirstOrDefault();
             var apiListingExceptions = directoryInfo.EnumerateFiles(apiListingExceptionsFile).FirstOrDefault();
 
-            var generate = Environment.GetEnvironmentVariable("APICHECK_GENERATE_BASELINE");
-            if (!string.IsNullOrEmpty(generate))
+            if (generate)
             {
                 var arguments = GenerateApiCheckArguments(framework,
                     "generate",
@@ -134,7 +140,7 @@ functions @{
                     arguments.Add("-e " + apiListingExceptions.FullName);
                 }
 
-                if (Environment.GetEnvironmentVariable("APICHECK_EXCLUDE_PUBLIC_INTERNAL_TYPES") != null)
+                if (excludePublicInternalTypes)
                 {
                     // Excludes types in the internal namespace
                     arguments.Add("-epi");
