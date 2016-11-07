@@ -28,9 +28,8 @@ default PROJECT_JSON="project.json"
         if (!IsLinux)
         {
             RunApiCheck(srcDirectory, projectJson.FullName, Configuration, fullFrameworkMonikerPrefix, "net45", generateApiListing, excludePublicInternalTypes);
+            RunApiCheck(srcDirectory, projectJson.FullName, Configuration, coreMonikerPrefix, "netcore", generateApiListing, excludePublicInternalTypes);
         }
-
-        RunApiCheck(srcDirectory, projectJson.FullName, Configuration, coreMonikerPrefix, "netcore", generateApiListing, excludePublicInternalTypes);
     }
 }
 
