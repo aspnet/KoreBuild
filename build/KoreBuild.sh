@@ -50,7 +50,8 @@ if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
 else
     # Need to set this variable because by default the install script
     # requires sudo
-    export DOTNET_INSTALL_DIR=~/.dotnet
+    [ -z "$DOTNET_INSTALL_DIR" ] && DOTNET_INSTALL_DIR=~/.dotnet
+    export DOTNET_INSTALL_DIR=$DOTNET_INSTALL_DIR
     export KOREBUILD_FOLDER="$(dirname $koreBuildFolder)"
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
