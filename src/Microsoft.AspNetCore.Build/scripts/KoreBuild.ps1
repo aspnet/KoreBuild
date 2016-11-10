@@ -46,8 +46,8 @@ function exec($cmd) {
 }
 
 function EnsureDotNet() {
-    $dotnetVersionFile = "$KoreBuildRoot\build\cli.version.win"
-    $dotnetChannel = "rel-1.0.0"
+    $dotnetVersionFile = "$KoreBuildRoot\build\cli.version"
+    $dotnetChannel = "preview"
     $dotnetVersion = Get-Content $dotnetVersionFile
 
     if ($env:KOREBUILD_DOTNET_CHANNEL)
