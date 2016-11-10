@@ -174,5 +174,5 @@ echo -e "${GREEN}Starting build...${RESET}"
 echo -e "${CYAN}> msbuild $PROJ $@${RESET}"
 
 # Enable "on error result next" ;P
-"$MSBUILD_DIR/bin/pub/corerun" "$MSBUILD_DIR/bin/pub/MSBuild.exe" @"$MSBUILD_RSP"
+"$MSBUILD_DIR/bin/pub/corerun" "$MSBUILD_DIR/bin/pub/MSBuild.dll" @"$MSBUILD_RSP"
 __end $?

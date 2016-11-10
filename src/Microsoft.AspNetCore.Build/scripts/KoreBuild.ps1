@@ -166,7 +166,7 @@ try {
     Write-Host -ForegroundColor Green "Starting build ..."
     Write-Host -ForegroundColor DarkGray "> msbuild $Proj $args"
 
-    & "$MSBuildDir\bin\pub\CoreRun.exe" "$MSBuildDir\bin\pub\MSBuild.exe" `@"$MSBuildResponseFile"
+    & "$MSBuildDir\bin\pub\CoreRun.exe" "$MSBuildDir\bin\pub\MSBuild.dll" `@"$MSBuildResponseFile"
 } finally {
     # Copy logs to artifacts
     if(!(Test-Path $ArtifactsDir)) {
