@@ -49,6 +49,7 @@ function EnsureDotNet() {
     $dotnetVersionFile = "$KoreBuildRoot\build\cli.version"
     $dotnetChannel = "preview"
     $dotnetVersion = Get-Content $dotnetVersionFile
+    $dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\"
 
     if ($env:KOREBUILD_DOTNET_CHANNEL)
     {
@@ -59,7 +60,11 @@ function EnsureDotNet() {
         $dotnetVersion = $env:KOREBUILD_DOTNET_VERSION
     }
 
-    $dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\"
+    if ($env:DOTNET_INSTALL_DIR)
+    {
+        $dotnetLocalInstallFolder = $env:DOTNET_INSTALL_DIR
+    }
+
     $newPath = "$dotnetLocalInstallFolder;$env:PATH"
     if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
     {
