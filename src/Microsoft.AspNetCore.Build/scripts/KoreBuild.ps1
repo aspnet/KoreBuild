@@ -102,7 +102,7 @@ function EnsureMSBuild() {
 
             Write-Host -ForegroundColor Green "Preparing MSBuild ..."
             exec dotnet restore "$MSBuildDir\project.json" -v Detailed
-            exec dotnet publish "$MSBuildDir\project.json" -o "$MSBuildDir\bin\pub"
+            exec dotnet publish "$MSBuildDir\project.json" -o "$MSBuildDir\bin\pub" -r $RID
 
             Write-Host -ForegroundColor Green "Preparing KoreBuild Tasks ..."
             exec dotnet restore "$KoreBuildRoot\src\Microsoft.AspNetCore.Build" -v Detailed
