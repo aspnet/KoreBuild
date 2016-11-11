@@ -94,6 +94,8 @@ ensure_dotnet() {
 
         __exec $DOTNET_INSTALL --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION >> $KOREBUILD_LOG
 
+        __exec $DOTNET_INSTALL --shared-runtime --channel preview --version 1.0.0 >> $KOREBUILD_LOG
+
         # Add .NET installation directory to the path if it isn't yet included.
         [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"
     fi
