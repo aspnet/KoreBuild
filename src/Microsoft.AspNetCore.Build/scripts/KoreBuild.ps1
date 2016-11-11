@@ -76,6 +76,7 @@ function EnsureDotNet() {
     {
         Write-Host -ForegroundColor Green "Installing .NET Command-Line Tools ..."
         exec "$KoreBuildRoot\build\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
+        exec "$KoreBuildRoot\build\dotnet\dotnet-install.ps1" --SharedRuntime -Channel 'preview' -Version '1.0.0' -Architecture x64
     }
     if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
     {

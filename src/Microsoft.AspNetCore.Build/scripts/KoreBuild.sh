@@ -74,15 +74,10 @@ __exec() {
 }
 
 ensure_dotnet() {
-    if test `uname` = Darwin; then
-        versionFileName="cli.version.darwin"
-    else
-        versionFileName="cli.version.unix"
-    fi
-    versionFile="$DOTNET_VERSION_DIR/$versionFileName"
+    versionFile="$DOTNET_VERSION_DIR/cli.version"
     version=$(<$versionFile)
 
-    [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=rel-1.0.0
+    [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=preview
     [ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
 
     if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
@@ -98,6 +93,8 @@ ensure_dotnet() {
         chmod +x $DOTNET_INSTALL
 
         __exec $DOTNET_INSTALL --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION >> $KOREBUILD_LOG
+
+        __exec $DOTNET_INSTALL --shared-runtime --channel preview --version 1.0.0 >> $KOREBUILD_LOG
 
         # Add .NET installation directory to the path if it isn't yet included.
         [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"
