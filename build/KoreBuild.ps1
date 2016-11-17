@@ -23,7 +23,11 @@ if ($env:KOREBUILD_DOTNET_VERSION)
     $dotnetVersion = $env:KOREBUILD_DOTNET_VERSION
 }
 
-$dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\"
+$dotnetLocalInstallFolder = $env:DOTNET_INSTALL_DIR
+if (!$dotnetLocalInstallFolder)
+{
+    $dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\"
+}
 $newPath = "$dotnetLocalInstallFolder;$env:PATH"
 if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 {

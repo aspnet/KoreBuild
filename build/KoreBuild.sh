@@ -50,7 +50,8 @@ if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
 else
     # Need to set this variable because by default the install script
     # requires sudo
-    export DOTNET_INSTALL_DIR=~/.dotnet
+    [ -z "$DOTNET_INSTALL_DIR" ] && DOTNET_INSTALL_DIR=~/.dotnet
+    export DOTNET_INSTALL_DIR=$DOTNET_INSTALL_DIR
     export KOREBUILD_FOLDER="$(dirname $koreBuildFolder)"
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
@@ -85,6 +86,17 @@ if [ ! -d $sakeFolder ]; then
     # Rename the project after restore because we don't want it to be restore afterwards
     mv "$toolsProject" "$toolsProject.norestore"
 fi
+
+netFrameworkFolder=$repoFolder/$koreBuildFolder/NETFrameworkReferenceAssemblies
+netFrameworkContentDir=$netFrameworkFolder/4.5.1/content
+if [ ! -d $netFrameworkFolder ]; then
+    xplatToolsProject="$koreBuildFolder/xplat.project.json"
+    dotnet restore "$xplatToolsProject" --packages $scriptRoot -v Minimal
+    # Rename the project after restore because we don't want it to be restore afterwards
+   mv $xplatToolsProject $xplatToolsProject.norestore
+fi
+
+export DOTNET_REFERENCE_ASSEMBLIES_PATH=$netFrameworkContentDir
 
 nugetPath="$koreBuildFolder/nuget.exe"
 if [ ! -f $nugetPath ]; then
