@@ -1,8 +1,0 @@
-{
-  "frameworks": {
-    "netcoreapp1.0": { }
-  },
-  "dependencies": {
-    "NETFrameworkReferenceAssemblies": "4.6"
-  }
-}

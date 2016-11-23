@@ -11,7 +11,7 @@ default currentDir = '${ Directory.GetCurrentDirectory() }'
 default restoreDir = '${ currentDir }'
 
 @{
-    var projectFiles = Files.Include(Path.Combine(restoreDir, "*/*/project.json"));
+    var projectFiles = Files.Include(Path.Combine(restoreDir, "*/*/*.csproj"));
     bool inferRids = false;
     foreach (var projectFile in projectFiles)
     {

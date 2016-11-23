@@ -81,7 +81,7 @@ fi
 
 sakeFolder=$koreBuildFolder/Sake
 if [ ! -d $sakeFolder ]; then
-    toolsProject="$koreBuildFolder/project.json"
+    toolsProject="$koreBuildFolder/tools.csproj"
     dotnet restore "$toolsProject" --packages $scriptRoot -v Minimal
     # Rename the project after restore because we don't want it to be restore afterwards
     mv "$toolsProject" "$toolsProject.norestore"
@@ -90,7 +90,7 @@ fi
 netFrameworkFolder=$repoFolder/$koreBuildFolder/NETFrameworkReferenceAssemblies
 netFrameworkContentDir=$netFrameworkFolder/4.6.0/content
 if [ ! -d $netFrameworkFolder ]; then
-    xplatToolsProject="$koreBuildFolder/xplat.project.json"
+    xplatToolsProject="$koreBuildFolder/xplat.tools.csproj"
     dotnet restore "$xplatToolsProject" --packages $scriptRoot -v Minimal
     # Rename the project after restore because we don't want it to be restore afterwards
    mv $xplatToolsProject $xplatToolsProject.norestore

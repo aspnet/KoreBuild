@@ -8,7 +8,7 @@ dotnet-test
     Run unit tests in your project.
 
 projectFile=''
-    Required. Path to the test project.json to execute
+    Required. Path to the test projectFile to execute
 
 configuration=''
     Optional. The configuration to build in. Defaults to 'Debug'.
@@ -21,7 +21,7 @@ default test_options=''
 @{
     var content = File.ReadAllText(projectFile);
     // Desktop tests only work on Windows. Only run the test on xplat if it has a netcoreapp1.0 TFM.
-    if (content.Contains("\"testRunner\"") && (!IsLinux || content.Contains("netcoreapp1.0")))
+    if (!IsLinux || content.Contains("netcoreapp1.0"))
     {
         var projectFolder = Path.GetDirectoryName(projectFile);
         var projectName = Path.GetFileName(projectFolder);
