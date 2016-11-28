@@ -38,7 +38,7 @@ fi
 versionFile="$koreBuildFolder/$versionFileName"
 version=$(<$versionFile)
 
-[ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=preview
+[ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=rel-1.0.0
 [ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
 
 if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
@@ -60,7 +60,7 @@ else
     $koreBuildFolder/dotnet/dotnet-install.1.0.sh --install-dir "$koreBuildFolder/dotnet" --channel rel-1.0.0 --version $(cat $koreBuildFolder/cli.version.msbuild)
 
     # Install the version of dotnet-cli used to compile
-    $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
+    $koreBuildFolder/dotnet/dotnet-install.1.0.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
 
     # Add .NET installation directory to the path if it isn't yet included.
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"
