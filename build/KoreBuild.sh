@@ -96,7 +96,7 @@ if [ ! -d $netFrameworkFolder ]; then
    mv $xplatToolsProject $xplatToolsProject.norestore
 fi
 
-export DOTNET_REFERENCE_ASSEMBLIES_PATH=$netFrameworkContentDir
+export ReferenceAssemblyRoot=$netFrameworkContentDir
 
 nugetPath="$koreBuildFolder/nuget.exe"
 if [ ! -f $nugetPath ]; then
