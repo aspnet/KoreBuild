@@ -35,8 +35,18 @@ version=$(<$versionFile)
 
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=preview
 [ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
-[ -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION" ] && KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION=1.0.0
-[ -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL" ] && KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL=preview
+
+install_shared_runtime() {
+    eval $invocation
+
+    local version=$1
+    local channel=$2
+
+    local sharedRuntimePath="$DOTNET_INSTALL_DIR/shared/Microsoft.NETCore.App/$version"
+    if [ ! -d "$sharedRuntimePath" ]; then
+        $koreBuildFolder/dotnet/dotnet-install.sh --shared-runtime --channel $channel --version $version
+    fi
+}
 
 if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
     echo "Skipping runtime installation because KOREBUILD_SKIP_RUNTIME_INSTALL is set"
@@ -53,9 +63,11 @@ else
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
     $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
-    sharedRuntimePath="$DOTNET_INSTALL_DIR/shared/Microsoft.NETCore.App/$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION"
-    if [ ! -d "$sharedRuntimePath" ]; then
-        $koreBuildFolder/dotnet/dotnet-install.sh --shared-runtime --channel $KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL --version $KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION
+    install_shared_runtime '1.0.0' 'preview'
+    if [ ! -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION" ]; then
+        channel="$KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL"
+        [ -z "$channel" ] && channel="master"
+        install_shared_runtime $KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION $channel
     fi
 
     # Add .NET installation directory to the path if it isn't yet included.

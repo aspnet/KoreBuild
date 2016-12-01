@@ -328,8 +328,8 @@ get_azure_channel_from_channel() {
             return 1
     esac
     
-    say_err "``$1`` is an invalid channel name. Use one of the following: ``future``, ``preview``, ``production``"
-    return 1
+    echo "$channel"
+    return 0
 }
 
 # args:

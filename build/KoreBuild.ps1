@@ -15,8 +15,6 @@ $koreBuildFolder = $koreBuildFolder.Replace($repoFolder, "").TrimStart("\")
 $dotnetVersionFile = $koreBuildFolder + "\cli.version"
 $dotnetChannel = "preview"
 $dotnetVersion = Get-Content $dotnetVersionFile
-$dotnetSharedRuntimeVersion = "1.0.0"
-$dotnetSharedRuntimeChannel = "preview"
 
 if ($env:KOREBUILD_DOTNET_CHANNEL) 
 {
@@ -26,19 +24,21 @@ if ($env:KOREBUILD_DOTNET_VERSION)
 {
     $dotnetVersion = $env:KOREBUILD_DOTNET_VERSION
 }
-if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION)
-{
-    $dotnetSharedRuntimeVersion = $env:KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION 
-}
-if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL)
-{
-    $dotnetSharedRuntimeChannel = $env:KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL 
-}
 
 $dotnetLocalInstallFolder = $env:DOTNET_INSTALL_DIR
 if (!$dotnetLocalInstallFolder)
 {
     $dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\"
+}
+
+function InstallSharedRuntime([string] $version, [string] $channel)
+{
+    $sharedRuntimePath = [IO.Path]::Combine($dotnetLocalInstallFolder, 'shared', 'Microsoft.NETCore.App', $version)
+    # Avoid redownloading the CLI if it's already installed.
+    if (!(Test-Path $sharedRuntimePath))
+    {
+        & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $channel -SharedRuntime -Version $version -Architecture x64
+    }
 }
  
 $newPath = "$dotnetLocalInstallFolder;$env:PATH"
@@ -51,11 +51,15 @@ if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 else
 {
     & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
-    # Avoid redownloading the CLI if it's already installed.
-    $sharedRuntimePath = [IO.Path]::Combine($dotnetLocalInstallFolder, 'shared', 'Microsoft.NETCore.App', $dotnetSharedRuntimeVersion)
-    if (!(Test-Path $sharedRuntimePath))
+    InstallSharedRuntime '1.0.0' 'preview'
+    if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION)
     {
-        & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetSharedRuntimeChannel -SharedRuntime -Version $dotnetSharedRuntimeVersion -Architecture x64
+        $channel = 'master'
+        if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL)
+        {
+            $channel = $env:KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL
+        }
+        InstallSharedRuntime $env:KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION $channel
     }
 }
 if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
