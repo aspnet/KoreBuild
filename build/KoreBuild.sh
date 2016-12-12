@@ -30,12 +30,7 @@ scriptRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 koreBuildFolder="${scriptRoot/$repoFolder/}"
 koreBuildFolder="${koreBuildFolder#/}"
 
-if test `uname` = Darwin; then
-    versionFileName="cli.version.darwin"
-else
-    versionFileName="cli.version.unix"
-fi
-versionFile="$koreBuildFolder/$versionFileName"
+versionFile="$koreBuildFolder/cli.version"
 version=$(<$versionFile)
 
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=rel-1.0.0
@@ -55,12 +50,8 @@ else
     export KOREBUILD_FOLDER="$(dirname $koreBuildFolder)"
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
-    # Install an MSBuild version of dotnet-cli
-    chmod +x $koreBuildFolder/dotnet/dotnet-install.1.0.sh
-    $koreBuildFolder/dotnet/dotnet-install.1.0.sh --install-dir "$koreBuildFolder/dotnet" --channel rel-1.0.0 --version $(cat $koreBuildFolder/cli.version.msbuild)
-
     # Install the version of dotnet-cli used to compile
-    $koreBuildFolder/dotnet/dotnet-install.1.0.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
+    $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
 
     # Add .NET installation directory to the path if it isn't yet included.
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"
@@ -79,21 +70,15 @@ if [ "$(uname)" == "Darwin" ]; then
     ulimit -n 2048
 fi
 
-sakeFolder=$koreBuildFolder/Sake
+netfxversion='4.6.0'
+netFrameworkFolder=$repoFolder/$koreBuildFolder/netframeworkreferenceassemblies
+netFrameworkContentDir=$netFrameworkFolder/$netfxversion/content
+sakeFolder=$koreBuildFolder/sake
 if [ ! -d $sakeFolder ]; then
-    toolsProject="$koreBuildFolder/tools.csproj"
-    dotnet restore "$toolsProject" --packages $scriptRoot -v Minimal
+    toolsProject="$koreBuildFolder/tools.proj"
+    dotnet restore "$toolsProject" --packages $scriptRoot -v Minimal "/p:NetFxVersion=$netfxversion"
     # Rename the project after restore because we don't want it to be restore afterwards
     mv "$toolsProject" "$toolsProject.norestore"
-fi
-
-netFrameworkFolder=$repoFolder/$koreBuildFolder/NETFrameworkReferenceAssemblies
-netFrameworkContentDir=$netFrameworkFolder/4.6.0/content
-if [ ! -d $netFrameworkFolder ]; then
-    xplatToolsProject="$koreBuildFolder/xplat.tools.csproj"
-    dotnet restore "$xplatToolsProject" --packages $scriptRoot -v Minimal
-    # Rename the project after restore because we don't want it to be restore afterwards
-   mv $xplatToolsProject $xplatToolsProject.norestore
 fi
 
 export ReferenceAssemblyRoot=$netFrameworkContentDir
