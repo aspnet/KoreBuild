@@ -139,7 +139,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
               var project = (JsonObject)Json.Deserialize(projectText);
               var isSharedProject = project.Keys.Contains("shared");
 
-              // We don't want to embed the commit hash in it because 
+              // We don't want to embed the commit hash in it because
               // the consumers would get that file
               if (!isSharedProject)
               {
@@ -166,7 +166,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
     {
         projectGlobs.Add(SAMPLES_PROJECT_GLOB);
     }
-    
+
     if (projectGlobs.Any())
     {
       DotnetBuild(string.Join(" ", projectGlobs.ToArray()), Configuration, BuildFramework);
@@ -240,13 +240,15 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
 
 #nuget-verify target='package' description='Verify if all the packages are generated properly'
   @{
-    if (!IsLinux && Directory.Exists("src") && File.Exists(PACKAGELIST_JSON_FILENAME))
-    {
+      if (Directory.Exists("src") && File.Exists(PACKAGELIST_JSON_FILENAME))
+      {
         var verifierDirectory = Directory.EnumerateDirectories(Path.Combine(KoreBuildFolderPath, "NuGetPackageVerifier")).First();
-        Exec(
-            Path.Combine(verifierDirectory, "NuGetPackageVerifier.exe"),
-            string.Format("\"{0} \" \"{1} \"", BUILD_DIR, Path.Combine(BASE_DIR, PACKAGELIST_JSON_FILENAME)));
-    }
+        Dotnet(
+            string.Format("\"{0}\" \"{1}\" \"{2}\"",
+            Path.Combine(verifierDirectory, "NuGetPackageVerifier.dll"),
+            BUILD_DIR.TrimEnd(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }),
+            Path.Combine(BASE_DIR, PACKAGELIST_JSON_FILENAME)));
+      }
   }
 
 #nuget-install target='install' description='Install NuGet packages to local repo'
@@ -409,7 +411,7 @@ functions @{
     {
       get { return E("KOREBUILD_BUILD_SRC_ONLY") == "1"; }
     }
-    
+
     bool AddAssemblyInfo
     {
       get { return E("KOREBUILD_ADD_ASSEMBLY_INFO") == "1"; }
