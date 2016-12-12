@@ -232,10 +232,13 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
   @{
     if (File.Exists(PACKAGELIST_JSON_FILENAME))
     {
+        var slashes=@"\"; // workaround Sake weirdness that doesn't allow literal chars
         var verifierDirectory = Directory.EnumerateDirectories(Path.Combine(KoreBuildFolderPath, "nugetpackageverifier")).First();
         Dotnet(
-            string.Format("\"{0}\" \"{1} \" \"{2}\"",
-            Path.Combine(verifierDirectory, "NuGetPackageVerifier.dll"), BUILD_DIR, Path.Combine(BASE_DIR, PACKAGELIST_JSON_FILENAME)));
+            string.Format("\"{0}\" \"{1}\" \"{2}\"",
+            Path.Combine(verifierDirectory, "NuGetPackageVerifier.dll"),
+            BUILD_DIR.TrimEnd(slashes[0]),
+            Path.Combine(BASE_DIR, PACKAGELIST_JSON_FILENAME)));
     }
   }
 
