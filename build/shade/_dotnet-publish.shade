@@ -4,7 +4,7 @@ dotnet-publish
     Builds package from project.
 
 projectFile=''
-    Required. Path to the project.json to build.
+    Required. Path to the projectFile to build.
 
 outputFolder=''
     Optional. The output folder.

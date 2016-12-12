@@ -16,9 +16,9 @@ default BUILD_DIR='${Path.Combine(TARGET_DIR, "build")}'
 default TEST_DIR='${Path.Combine(TARGET_DIR, "test")}'
 default Configuration='${E("Configuration")}'
 default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
-default SRC_PROJECT_GLOB = "src/*/project.json"
-default TEST_PROJECT_GLOB = "test/*/project.json"
-default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
+default SRC_PROJECT_GLOB = "src/*/*.csproj"
+default TEST_PROJECT_GLOB = "test/*/*.csproj"
+default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
 
 @{
   if (string.IsNullOrEmpty(E("DOTNET_BUILD_VERSION")))
@@ -103,7 +103,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
     }
 
 #build-clean if='Directory.Exists("src")'
-  k-clean each='var projectFile in Files.Include("src/*/project.json")'
+  k-clean each='var projectFile in Files.Include("src/*/*.csproj")'
 
 #ci-deep-clean .deep-clean target='clean' if='IsTeamCity'
 
@@ -129,10 +129,10 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
       {
           if (AddAssemblyInfo)
           {
-              var projectText = File.ReadAllText(projectFile);
-              var project = (JsonObject)Json.Deserialize(projectText);
-              var isSharedProject = project.Keys.Contains("shared");
-
+              // var projectText = File.ReadAllText(projectFile);
+              // var project = (JsonObject)Json.Deserialize(projectText);
+              // var isSharedProject = project.Keys.Contains("shared");
+              var isSharedProject = false;
               // We don't want to embed the commit hash in it because
               // the consumers would get that file
               if (!isSharedProject)
@@ -147,20 +147,23 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
           }
       });
 
-      projectGlobs.Add(SRC_PROJECT_GLOB);
+      projectGlobs.AddRange(srcProjects);
     }
     if (!BuildSrcOnly && Directory.Exists("test"))
     {
-        projectGlobs.Add(TEST_PROJECT_GLOB);
+        projectGlobs.AddRange(Files.Include(TEST_PROJECT_GLOB).ToList());
     }
     if (!BuildSrcOnly && Directory.Exists("samples"))
     {
-        projectGlobs.Add(SAMPLES_PROJECT_GLOB);
+        projectGlobs.AddRange(Files.Include(SAMPLES_PROJECT_GLOB).ToList());
     }
 
     if (projectGlobs.Any())
     {
-      DotnetBuild(string.Join(" ", projectGlobs.ToArray()), Configuration, BuildFramework);
+      foreach (var project in projectGlobs)
+      {
+        DotnetBuild(project, Configuration, BuildFramework);
+      }
     }
   }
 
@@ -227,13 +230,15 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
 
 #nuget-verify target='package' description='Verify if all the packages are generated properly'
   @{
-    if (ShouldVerifyNupkgs && File.Exists(PACKAGELIST_JSON_FILENAME))
-    {
-        var verifierDirectory = Directory.EnumerateDirectories(Path.Combine(KoreBuildFolderPath, "NuGetPackageVerifier")).First();
-        Exec(
-            Path.Combine(verifierDirectory, "NuGetPackageVerifier.exe"),
-            string.Format("\"{0} \" \"{1} \"", BUILD_DIR, Path.Combine(BASE_DIR, PACKAGELIST_JSON_FILENAME)));
-    }
+      if (Directory.Exists("src") && File.Exists(PACKAGELIST_JSON_FILENAME))
+      {
+        var verifierDirectory = Directory.EnumerateDirectories(Path.Combine(KoreBuildFolderPath, "nugetpackageverifier")).First();
+        Dotnet(
+            string.Format("\"{0}\" \"{1}\" \"{2}\"",
+            Path.Combine(verifierDirectory, "NuGetPackageVerifier.dll"),
+            BUILD_DIR.TrimEnd(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }),
+            Path.Combine(BASE_DIR, PACKAGELIST_JSON_FILENAME)));
+      }
   }
 
 #nuget-install target='install' description='Install NuGet packages to local repo'
@@ -247,34 +252,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
     var projectFiles = Files.Include(TEST_PROJECT_GLOB);
     foreach (var projectFile in projectFiles)
     {
-        DotnetTest(projectFile, Configuration, E("KOREBUILD_DOTNET_TEST_OPTIONS") + " --no-build");
-    }
-  }
-
-#xunit-test-msbuild
-  @{
-    var projectFiles = Files.Include(TEST_PROJECT_GLOB);
-    foreach (var projectFile in projectFiles)
-    {
-        var projectDir = Path.GetDirectoryName(projectFile);
-        var projectName = Path.GetFileName(projectDir);
-        var targetDir = Path.Combine(projectDir, "bin", Configuration, "netcoreapp1.0");
-        var depsFile = Path.Combine(targetDir, projectName + ".deps.json");
-        var configFile = Path.Combine(targetDir, projectName + ".runtimeconfig.json");
-        var assembly = Path.Combine(targetDir, projectName + ".dll");
-        var msbuildDotnet = Path.Combine(BASE_DIR, ".build/dotnet/dotnet");
-        if (!File.Exists(configFile))
-        {
-          continue;
-        }
-
-        Exec(msbuildDotnet, string.Format(
-                @"exec --depsfile ""{0}"" --runtimeconfig ""{1}"" ""{2}"" ""{3}"" {4}",
-                depsFile,
-                configFile,
-                Path.Combine(BASE_DIR, ".build/dotnet-test-xunit/2.2.0-preview2-build1029/lib/netcoreapp1.0/dotnet-test-xunit.dll"),
-                assembly,
-                E("KOREBUILD_DOTNET_TEST_OPTIONS")));
+        DotnetTest(projectFile, Configuration, E("KOREBUILD_DOTNET_TEST_OPTIONS"));
     }
   }
 
@@ -316,11 +294,6 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
 
 #--parallel
    @{ ExecuteParallel = true; }
-
-#--test-dnxcore
-  @{
-     Log.Warn("The --test-dnxcore flag is no longer supported. It will be ignored.");
-  }
 
 functions @{
     private static bool Quiet { get; set; }

@@ -4,7 +4,7 @@ dotnet-pack
     Builds package from project.
 
 projectFile=''
-    Required. Path to the project.json to build.
+    Required. Path to the projectFile to build.
 
 dotnetPackOutputDir=''
     Required. Base output directory.
@@ -21,7 +21,7 @@ default pack_options=''
     var projectName=Path.GetFileName(projectFolder);
     var projectBin=Path.Combine(projectFolder, "bin");
 
-    var dotnetArgs=string.Format("pack{0} {1} --configuration {2}", pack_options, projectFolder, configuration);
+    var dotnetArgs=string.Format("pack{0} {1} --configuration {2}", pack_options, projectFile, configuration);
     Dotnet(dotnetArgs);
 
     CopyFolder(projectBin, Path.Combine(dotnetPackOutputDir, projectName), true);

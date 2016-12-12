@@ -10,8 +10,8 @@ cd $repoFolder
 $koreBuildFolder = $PSScriptRoot
 $koreBuildFolder = $koreBuildFolder.Replace($repoFolder, "").TrimStart("\")
 
-$dotnetVersionFile = $koreBuildFolder + "\cli.version.win"
-$dotnetChannel = "preview"
+$dotnetVersionFile = $koreBuildFolder + "\cli.version"
+$dotnetChannel = "rel-1.0.0"
 $dotnetVersion = Get-Content $dotnetVersionFile
 
 if ($env:KOREBUILD_DOTNET_CHANNEL)
@@ -37,8 +37,6 @@ if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 }
 else
 {
-    # Install an MSBuild version of dotnet-cli
-    & "$koreBuildFolder/dotnet/dotnet-install.1.0.ps1" -InstallDir "$koreBuildFolder/dotnet" -Version (Get-Content "$koreBuildFolder\cli.version.msbuild") -Architecture x64 -Channel "rel-1.0.0"
     # Install the version of dotnet-cli used to compile
     & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
 }
@@ -54,7 +52,7 @@ $sharedPath = (Join-Path (Split-Path ((get-command dotnet.exe).Path) -Parent) "s
 
 if (!(Test-Path "$koreBuildFolder\Sake"))
 {
-    $toolsProject = "$koreBuildFolder\project.json"
+    $toolsProject = "$koreBuildFolder\tools.proj"
     if (!(Test-Path $toolsProject))
     {
         if (Test-Path "$toolsProject.norestore")
