@@ -1,3 +1,5 @@
+#requires -version 4
+
 $repoFolder = $env:REPO_FOLDER
 if (!$repoFolder) {
     throw "REPO_FOLDER is not set"
@@ -28,6 +30,17 @@ if (!$dotnetLocalInstallFolder)
 {
     $dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\"
 }
+
+function InstallSharedRuntime([string] $version, [string] $channel)
+{
+    $sharedRuntimePath = [IO.Path]::Combine($dotnetLocalInstallFolder, 'shared', 'Microsoft.NETCore.App', $version)
+    # Avoid redownloading the CLI if it's already installed.
+    if (!(Test-Path $sharedRuntimePath))
+    {
+        & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $channel -SharedRuntime -Version $version -Architecture x64
+    }
+}
+
 $newPath = "$dotnetLocalInstallFolder;$env:PATH"
 if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 {
@@ -39,6 +52,16 @@ else
 {
     # Install the version of dotnet-cli used to compile
     & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
+    InstallSharedRuntime '1.1.0' 'release/1.1.0'
+    if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION)
+    {
+        $channel = 'master'
+        if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL)
+        {
+            $channel = $env:KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL
+        }
+        InstallSharedRuntime $env:KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION $channel
+    }
 }
 if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
 {

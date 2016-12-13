@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Defines the Standard Lifecycle (a standard pattern for .NET Builds) -->
+
+  <!-- Don't do anything here! -->
+  <Target Name="Preinit">
+    <!-- Anything in or before this target can't easily be debugged for obvious reasons ;) -->
+    <WaitForDebugger Condition="'$(Debug)' == 'true'" />
+  </Target>
+
+  <!-- Place to do dynamic property initialiation -->
+  <!-- Initialize is ALWAYS run, regardless of what target the user requested (see makefile.proj's InitialTargets -->
+  <Target Name="Initialize" DependsOnTargets="Preinit">
+    <Message Text="*** Completed Initialize Phase ***" />
+  </Target>
+
+  <!-- Place to prepare the repo for the build -->
+  <Target Name="Prepare" DependsOnTargets="Initialize">
+    <Message Text="*** Completed Prepare Phase ***" />
+  </Target>
+
+  <!-- Place to compile projects -->
+  <Target Name="Compile" DependsOnTargets="Prepare">
+    <Message Text="*** Completed Compile Phase ***" />
+  </Target>
+
+  <!-- Place to run tests -->
+  <Target Name="Test" DependsOnTargets="Compile">
+    <Message Text="*** Completed Test Phase ***" />
+  </Target>
+
+  <Target Name="Package" DependsOnTargets="Test">
+    <Message Text="*** Completed Package Phase ***" />
+  </Target>
+
+  <!-- Place to perform package verification -->
+  <Target Name="Verify" DependsOnTargets="Package">
+    <Message Text="*** Completed Verify Phase ***" />
+  </Target>
+
+  <!-- Place to publish build outputs -->
+  <Target Name="Publish" DependsOnTargets="Verify">
+    <Message Text="*** Completed Publish Phase ***" />
+  </Target>
+
+  <!-- Primary build target -->
+  <Target Name="Build" DependsOnTargets="Package">
+    <Message Text="*** Completed Build Phase ***" />
+  </Target>
+
+  <!-- Primary clean-up target -->
+  <Target Name="Clean" DependsOnTargets="Initialize">
+    <Message Text="*** Completed Clean Phase ***" />
+  </Target>
+
+  <!-- Targets used by CI/etc. Here so that they can be reconfigured via KoreBuild rather than messing with build scripts -->
+  <!-- The target invoked by Universe-Coherence when this repo is built -->
+  <Target Name="UniverseCoherenceBuild" DependsOnTargets="Verify" />
+</Project>

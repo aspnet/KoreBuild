@@ -1,0 +1,11 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- This file lists all the tasks that ship in KoreBuild -->
+  <UsingTask AssemblyName="Microsoft.AspNetCore.Build" TaskName="Microsoft.AspNetCore.Build.Tasks.WaitForDebugger" />
+  <UsingTask AssemblyName="Microsoft.AspNetCore.Build" TaskName="Microsoft.AspNetCore.Build.Tasks.GetGitCommitInfo" />
+  <UsingTask AssemblyName="Microsoft.AspNetCore.Build" TaskName="Microsoft.AspNetCore.Build.Tasks.DetectOSPlatform" />
+  <UsingTask AssemblyName="Microsoft.AspNetCore.Build" TaskName="Microsoft.AspNetCore.Build.Tasks.GatherProjectMetadata" />
+  <UsingTask AssemblyName="Microsoft.AspNetCore.Build" TaskName="Microsoft.AspNetCore.Build.Tasks.DumpMetadata" />
+  <UsingTask AssemblyName="Microsoft.AspNetCore.Build" TaskName="Microsoft.AspNetCore.Build.Tasks.ResolvePackagedTool" />
+  <UsingTask AssemblyName="Microsoft.AspNetCore.Build" TaskName="Microsoft.AspNetCore.Build.Tasks.NuGetInstall" />
+  <UsingTask AssemblyName="Microsoft.AspNetCore.Build" TaskName="Microsoft.AspNetCore.Build.Tasks.NuGetResilientPush" />
+</Project>

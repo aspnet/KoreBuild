@@ -25,10 +25,6 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
   {
     E("DOTNET_BUILD_VERSION", BuildNumber);
   }
-  if (string.IsNullOrEmpty(E("DOTNET_AUTHOR")))
-  {
-    E("DOTNET_AUTHOR", AUTHORS);
-  }
   if (string.IsNullOrEmpty(E("DOTNET_ASSEMBLY_FILE_VERSION")))
   {
     E("DOTNET_ASSEMBLY_FILE_VERSION", CreateDayBasedVersionNumber());
@@ -44,7 +40,10 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
   @{
     Configuration = "Release";
     E("Configuration", Configuration);
-    E("KOREBUILD_ADD_ASSEMBLY_INFO", "1");
+    if (string.IsNullOrEmpty(E("KOREBUILD_ADD_ASSEMBLY_INFO")))
+    {
+      E("KOREBUILD_ADD_ASSEMBLY_INFO", "1");
+    }
     E("KOREBUILD_DOTNET_PACK_OPTIONS", E("KOREBUILD_DOTNET_PACK_OPTIONS") + " --serviceable");
     E("KOREBUILD_VERIFY_NUPKGS", "1");
   }
@@ -54,7 +53,10 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
     // Find all dirs that contain a package.json file
     var npmDirs = GetDirectoriesContaining(Directory.GetCurrentDirectory(), "package.json").ToArray();
     var npmOptions = E("KOREBUILD_NPM_INSTALL_OPTIONS") ?? "--quiet --depth 0";
-    Parallel.ForEach(npmDirs, npmDir => Npm("install " + npmOptions, npmDir));
+    foreach (var npmDir in npmDirs)
+    {
+        Npm("install " + npmOptions, npmDir);
+    }
   }
 
 #restore-bower-components
@@ -153,7 +155,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
     {
         projectGlobs.AddRange(Files.Include(TEST_PROJECT_GLOB).ToList());
     }
-    if (!BuildSrcOnly && Directory.Exists("samples"))
+    if (!BuildSrcOnly && Directory.Exists("samples") && Directory.EnumerateFiles("samples", "*.csproj", SearchOption.AllDirectories).Any())
     {
         projectGlobs.AddRange(Files.Include(SAMPLES_PROJECT_GLOB).ToList());
     }
@@ -166,6 +168,9 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
       }
     }
   }
+
+#run-api-check .build-compile target='compile' description='Checks the compiled assemblies against a baseline for potential breaking changes'
+  api-check
 
 #build-pack .build-compile target='compile'
   @{
@@ -210,6 +215,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
 
           foreach (var project in nativeProjects)
           {
+            Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(project), "bin"));
             Exec(msbuildPath, project + " /p:Platform=Win32" + commonParameters);
             Exec(msbuildPath, project + " /p:Platform=x64" + commonParameters);
           }
@@ -242,10 +248,30 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
   }
 
 #nuget-install target='install' description='Install NuGet packages to local repo'
-  -if (Directory.Exists("src")) {
+  -if (Directory.Exists("src") && Directory.Exists(BUILD_DIR)) {
     nuget-packages-add sourcePackagesDir='${BUILD_DIR}' targetPackagesDir='${E("PACKAGES_PUBLISH_DIR")}'
     nuget-resilient-publish sourcePackagesDir='${BUILD_DIR}' nugetFeed='${E("NUGET_PUBLISH_FEED")}' if='!string.IsNullOrEmpty(E("NUGET_PUBLISH_FEED"))'
   -}
+
+#ci-test
+  @{
+     if (Directory.Exists("test"))
+     {
+       var globalJson = Path.Combine(BASE_DIR, "global.json");
+       if (File.Exists(globalJson))
+       {
+         var original = File.ReadAllText(globalJson);
+         var replaced = original.Replace("src,", null).Replace("src", null);
+         File.WriteAllText(globalJson, replaced);
+       }
+       CallTarget("initialize");
+       var projectFiles = Files.Include(TEST_PROJECT_GLOB);
+       foreach (var projectFile in projectFiles)
+       {
+         DotnetTest(projectFile, Configuration, E("KOREBUILD_DOTNET_TEST_OPTIONS"));
+       }
+     }
+  }
 
 #xunit-test target='test' if='Directory.Exists("test")'
   @{
@@ -377,11 +403,6 @@ functions @{
         Log.Warn("   command not found");
         return false;
       }
-    }
-
-    bool ShouldVerifyNupkgs
-    {
-      get { return E("KOREBUILD_VERIFY_NUPKGS") == "1"; }
     }
 
     bool BuildSrcOnly

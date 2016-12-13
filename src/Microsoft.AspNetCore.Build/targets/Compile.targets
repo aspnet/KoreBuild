@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Put targets attached to the 'Compile' phase of the Standard Lifecycle here. -->
+
+  <Target Name="DotNetBuild" BeforeTargets="Compile">
+    <ItemGroup>
+      <_ToBuild Include="@(Projects)" Condition="'$(BuildSourceOnly)' != 'true' Or '%(Projects.ProjectGroup)' == 'src'" />
+    </ItemGroup>
+
+    <Delete Files="%(_ToBuild.GeneratedBuildInfoFile)" Condition="Exists(%(_ToBuild.GeneratedBuildInfoFile))" />
+    <WriteLinesToFile
+      Lines="[assembly: System.Reflection.AssemblyMetadata(&quot;CommitHash&quot;, &quot;$(CommitHash)&quot;)]"
+      File="%(_ToBuild.GeneratedBuildInfoFile)"
+      Overwrite="true"
+      Condition="!Exists(%(_ToBuild.SharedSourcesDir)) And '$(CommitHash)' != ''" />
+    <Exec
+      Command="dotnet build --version-suffix &quot;$(BuildVersionSuffix)&quot; --configuration &quot;$(Configuration)&quot; $(DotNetBuild_Options) @(_ToBuild->'&quot;%(FullPath)&quot;', ' ')"
+      WorkingDirectory="$(RepositoryDir)" />
+    <Delete Files="%(_ToBuild.GeneratedBuildInfoFile)" Condition="Exists(%(_ToBuild.GeneratedBuildInfoFile))" />
+  </Target>
+  <Target Name="CopyBuildOutput" AfterTargets="DotNetBuild">
+    <ItemGroup>
+      <_ToCopy Include="%(Projects.ProjectDir)bin\**" Condition="'%(Projects.ProjectGroup)' == 'src'">
+        <ProjectName>%(Projects.ProjectName)</ProjectName>
+      </_ToCopy>
+    </ItemGroup>
+    <Copy SourceFiles="@(_ToCopy)" DestinationFiles="@(_ToCopy->'$(BuildDir)\%(ProjectName)\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+</Project>

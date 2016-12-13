@@ -1,0 +1,19 @@
+{
+    "frameworks": {
+        "netcoreapp1.0": {
+            "imports": [ "dotnet5.5", "portable-net45+win8" ]
+        }
+    },
+    "dependencies": {
+        "NETStandard.Library": "1.6.0",
+        "Microsoft.NETCore.TestHost": "1.0.0",
+        "Microsoft.NETCore.Runtime.CoreCLR": "1.0.4",
+        "Microsoft.NETCore.Platforms": "1.1.0-*",
+        "System.Dynamic.Runtime": "4.0.11",
+        "NuGet.CommandLine.Xplat": "3.5.0-rc1-final",
+        "Microsoft.Build.Runtime": "15.1.0-preview-000370-00"
+    },
+    "runtimes": {
+        "RUNTIME": {}
+    }
+}
