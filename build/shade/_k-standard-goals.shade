@@ -21,13 +21,9 @@ default TEST_PROJECT_GLOB = "test/*/*.csproj"
 default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
 
 @{
-  if (string.IsNullOrEmpty(E("DOTNET_BUILD_VERSION")))
+  if (string.IsNullOrEmpty(E("BuildNumber")))
   {
-    E("DOTNET_BUILD_VERSION", BuildNumber);
-  }
-  if (string.IsNullOrEmpty(E("DOTNET_ASSEMBLY_FILE_VERSION")))
-  {
-    E("DOTNET_ASSEMBLY_FILE_VERSION", CreateDayBasedVersionNumber());
+    E("BuildNumber", BuildNumber);
   }
   if (string.IsNullOrEmpty(Configuration))
   {
