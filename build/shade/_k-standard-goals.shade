@@ -252,7 +252,14 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
     var projectFiles = Files.Include(TEST_PROJECT_GLOB);
     foreach (var projectFile in projectFiles)
     {
-        DotnetTest(projectFile, Configuration, E("KOREBUILD_DOTNET_TEST_OPTIONS"));
+        var options = E("KOREBUILD_DOTNET_TEST_OPTIONS");
+        if (IsTeamCity)
+        {
+            // TODO put all trx files in same folder. See https://github.com/Microsoft/vstest/issues/243
+            // TODO or use TC logger https://github.com/Microsoft/vstest/issues/254
+            options += " --logger:trx ";
+        }
+        DotnetTest(projectFile, Configuration, options);
     }
   }
 

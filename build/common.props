@@ -17,10 +17,14 @@
         <_SecondBasedTimeStamp>$([System.DateTime]::UtcNow.Subtract($([System.DateTime]::Parse("2015-01-01"))).TotalSeconds.ToString())</_SecondBasedTimeStamp>
         <_SecondBasedTimeStamp>t$([System.Int64]::Parse($(_SecondBasedTimeStamp.Substring(0, $(_SecondBasedTimeStamp.IndexOf("."))))).ToString("x9"))</_SecondBasedTimeStamp>
 
-        <PackWithoutBuildNumber Condition="'$(PackWithoutBuildNumber)'==''">false</PackWithoutBuildNumber>
+        <!-- for aspnet CI -->
+        <BuildNumber Condition="'$(BuildNumber)'==''">$(KOREBUILD_BUILD_NUMBER)</BuildNumber>
+
         <BuildNumber Condition="'$(BuildNumber)'==''">$(_SecondBasedTimeStamp)</BuildNumber>
         <VersionSuffix Condition="'$(VersionSuffix)'!='' AND '$(BuildNumber)' != ''">$(VersionSuffix)-$(BuildNumber)</VersionSuffix>
         <VersionSuffix Condition="'$(VersionSuffix)'==''">$(BuildNumber)</VersionSuffix>
+
+        <PackWithoutBuildNumber Condition="'$(PackWithoutBuildNumber)'==''">false</PackWithoutBuildNumber>
     </PropertyGroup>
 
     <!-- PackWithoutBuildNumber only works if 'VersionPrefix' is in use. -->
