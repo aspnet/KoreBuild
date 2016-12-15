@@ -8,7 +8,13 @@
         <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
         <ProjectUrl>https://asp.net</ProjectUrl>
         <RequireLicenseAcceptance>true</RequireLicenseAcceptance>
-        <WarningsAsErrors>true</WarningsAsErrors>
+        <Serviceable Condition="'$(Configuration)' == 'Release'">true</Serviceable>
+    </PropertyGroup>
+
+    <!-- common build options -->
+    <PropertyGroup>
+        <WarningsAsErrors>true</WarningsAsErrors> <!-- make disabling warnings opt-out -->
+        <CustomAfterMicrosoftCommonTargets>$(MSBuildThisFileDirectory)targets\Internal.AspNetCore.Common.targets</CustomAfterMicrosoftCommonTargets>
     </PropertyGroup>
 
     <!-- version options -->
@@ -35,8 +41,4 @@
         <PackageVersion Condition="'$(VersionSuffix)' != ''">$(PackageVersion)-$(VersionSuffix)-final</PackageVersion>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-        <!-- pack options -->
-        <Serviceable>true</Serviceable>
-    </PropertyGroup>
 </Project>
