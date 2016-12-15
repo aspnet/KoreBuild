@@ -1,0 +1,12 @@
+<!--
+Copyright (c) .NET Foundation. All rights reserved.
+Licensed under the Apache License, Version 2.0.
+
+WARNING: This file is meant for building Microsoft's ASP.NET Core repos, and is not intended
+for use outside of Microsoft.
+-->
+<Project>
+    <!-- allow multi-repo builds with aspnet/Universe to inject properties -->
+    <Import Project="$(CustomUniverseBeforeCommonProps)"
+        Condition="'$(CustomUniverseBeforeCommonProps)' != '' AND Exists('$(CustomUniverseBeforeCommonProps)')" />
+</Project>
