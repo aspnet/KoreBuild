@@ -1,0 +1,8 @@
+<Project>
+  <Import Project="..\version.props" />
+   <Import Project="..\.\build\common.props" Condition="Exists('..\.build\common.props')" />
+  <PropertyGroup>
+    <_OriginalCustomAfterMicrosoftCommonTargets>$(CustomAfterMicrosoftCommonTargets)</_OriginalCustomAfterMicrosoftCommonTargets>
+    <CustomAfterMicrosoftCommonTargets>$(MSBuildThisFileDirectory)common.targets</CustomAfterMicrosoftCommonTargets>
+  </PropertyGroup>
+</Project>

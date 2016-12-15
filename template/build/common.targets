@@ -1,0 +1,14 @@
+<Project>
+  <Import Project="$(_OriginalCustomAfterMicrosoftCommonTargets)"
+          Condition="'$(_OriginalCustomAfterMicrosoftCommonTargets)'!='' AND Exists('$(_OriginalCustomAfterMicrosoftCommonTargets)')" />
+
+  <PropertyGroup>
+    <BuildDependsOn>EnsureInitialized;$(BuildDependsOn)</BuildDependsOn>
+  </PropertyGroup>
+
+  <Target Name="EnsureInitialized"
+          Condition="!Exists('$(MSBuildThisFileDirectory)..\.build\common.props')">
+    <Error File="$(MSBuildProjectFile)"
+           Text="Project has not been initialized. Run 'build initialize' in the solution directory '$(MSBuildThisFileDirectory)'" />
+  </Target>
+</Project>
