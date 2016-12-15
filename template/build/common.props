@@ -6,7 +6,7 @@
           BeforeTargets="Build"
           Condition="!Exists('$(MSBuildThisFileDirectory)..\.build\common.props')">
     <Error File="$(MSBuildProjectFile)"
-           Text="Project has not been initialized. Run 'build initialize' in the solution directory '$(MSBuildThisFileDirectory)'" />
+           Text="Project has not been initialized. Run 'build initialize' in the solution directory." />
   </Target>
 
 </Project>

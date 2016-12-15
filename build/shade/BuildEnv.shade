@@ -25,29 +25,6 @@ functions
       return seconds.ToString("x").PadLeft(9, (char)'0');
     }
 
-    private bool _buildQualitySet;
-    private string _buildQuality;
-
-    string BuildQuality
-    {
-        get
-        {
-            if (!_buildQualitySet)
-            {
-                var buildQualityFilePath = Path.Combine(KoreBuildFolderPath, "build-quality.txt");
-                _buildQuality = File.ReadAllText(buildQualityFilePath);
-                _buildQualitySet = true;
-            }
-
-            return _buildQuality;
-        }
-        set
-        {
-            _buildQuality = value;
-            _buildQualitySet = true;
-        }
-    }
-
     string BuildNumber
     {
         get
@@ -58,7 +35,7 @@ functions
                 return "t" + CreateSecondBasedTimeStamp();
             }
 
-            return !string.IsNullOrEmpty(BuildQuality) ? BuildQuality + "-" + buildNumber : buildNumber;
+            return buildNumber;
         }
     }
 
