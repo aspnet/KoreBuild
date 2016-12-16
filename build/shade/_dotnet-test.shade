@@ -34,7 +34,7 @@ default test_options=''
         }
 
         var testArgs = test_options + " --configuration " + configuration;
-        if (IsLinux)
+        if (IsLinux && !testArgs.Contains("--framework "))
         {
             testArgs += " -f netcoreapp1.0";
         }
