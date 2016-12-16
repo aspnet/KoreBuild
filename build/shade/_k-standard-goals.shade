@@ -263,10 +263,11 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
         }
         // workaround for https://github.com/Microsoft/vstest/issues/283
         var txt = File.ReadAllText(projectFile);
-        var match = Regex.Match(txt, @"\<TargetFrameworks\>(.+)\<\/TargetFrameworks\>");
-        if (match != null && match.Success && !string.IsNullOrEmpty(match.Groups[1].Value))
+        var multiTfm = Regex.Match(txt, @"\<TargetFrameworks\>(.+)\<\/TargetFrameworks\>");
+        var singleTfm = Regex.Match(txt, @"\<TargetFramework\>(.+)\<\/TargetFramework\>");
+        if (multiTfm != null && multiTfm.Success)
         {
-          var frameworks = match.Groups[1]
+          var frameworks = multiTfm.Groups[1]
             .Value
             .Split(new string[] {";"}, StringSplitOptions.RemoveEmptyEntries)
             .Select(s => s.Trim())
@@ -274,13 +275,31 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
 
           foreach (var framework in frameworks)
           {
-            var options2 = options + " --framework " + framework;
-            DotnetTest(projectFile, Configuration, options2);
+            if (IsLinux && framework != null && framework.StartsWith("net4"))
+            {
+              Log.Info("Skipping tests for TFM " + framework + " on this platform");
+              continue;
+            }
+
+            DotnetTest(projectFile, Configuration, options, framework);
           }
           // end workaround
         }
+        else if(singleTfm != null && singleTfm.Success)
+        {
+          var framework = singleTfm.Groups[1].Value;
+          if (IsLinux && framework != null && framework.StartsWith("net4"))
+          {
+            Log.Info("Skipping tests for TFM " + framework + " on this platform");
+          }
+          else
+          {
+            DotnetTest(projectFile, Configuration, options, framework);
+          }
+        }
         else
         {
+          // default invocation
           DotnetTest(projectFile, Configuration, options);
         }
     }
@@ -456,6 +475,9 @@ macro name="DotnetPublish" projectFile='string' outputFolder='string' framework=
     dotnet-publish
 
 macro name="DotnetTest" projectFile='string' configuration='string' test_options='string'
+    dotnet-test
+
+macro name="DotnetTest" projectFile='string' configuration='string' test_options='string' framework='string'
     dotnet-test
 
 macro name='Npm' npmCommand='string' npmDir='string'
