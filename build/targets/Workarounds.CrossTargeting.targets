@@ -5,21 +5,19 @@ Licensed under the Apache License, Version 2.0.
 WARNING: This file is meant for building Microsoft's ASP.NET Core repos, and is not intended
 for use outside of Microsoft.
 -->
-
-<!-- this file is dedicated to working around bugs in Microsoft.NET.Sdk RC.2 release -->
 <Project>
-    <!-- workaround https://github.com/Microsoft/vstest/issues/191 -->
-    <PropertyGroup
-        Condition="$(MSBuildProjectName.EndsWith('Test')) OR $(MSBuildProjectName.EndsWith('Tests'))">
-        <OutputType Condition="$(TargetFramework.StartsWith('netcoreapp'))">exe</OutputType>
-    </PropertyGroup>
-    <!-- end workaround -->
-
     <!-- workaround https://github.com/NuGet/Home/issues/4063 -->
     <!-- workaround https://github.com/NuGet/Home/issues/3953 -->
-    <Target Name="ResolveActualPackageVersions"
-            BeforeTargets="GenerateNuSpec"
-            DependsOnTargets="ResolvePackageDependenciesDesignTime">
+    <Target Name="ResolveActualPackageVersions" BeforeTargets="GenerateNuspec">
+        <ItemGroup>
+            <_TargetFramework Include="$(TargetFrameworks)" />
+        </ItemGroup>
+
+        <MSBuild Projects="$(MSBuildProjectFile)"
+                 Targets="ResolvePackageDependenciesDesignTime"
+                 Properties="TargetFramework=%(_TargetFramework.Identity)">
+            <Output TaskParameter="TargetOutputs" ItemName="_DependenciesDesignTime" />
+        </MSBuild>
 
         <ItemGroup>
             <_Tmp Include="@(_ProjectReferences)" />
@@ -37,17 +35,9 @@ for use outside of Microsoft.
             <_PackageReferences Include="@(_ResolvedFloatingVersion)" Condition="'%(Identity)'=='%(_ResolvedFloatingVersion.ResolvedName)'" />
         </ItemGroup>
 
+
         <Message Importance="Normal" Text="Proj: %(_ProjectReferences.FileName) %(_ProjectReferences.PackageVersion)" />
         <Message Importance="Normal" Text="Pkg: %(_PackageReferences.Identity) %(_PackageReferences.Version)" />
     </Target>
-    <!-- end workaround -->
-
-    <!-- workaround https://github.com/dotnet/sdk/issues/490 -->
-    <ItemGroup>
-        <Compile Include="$(MSBuildThisFileDirectory)..\contentFiles\cs\any\AssemblyInfo.Serviceable.cs"
-                 Condition="'$(DesignTimeBuild)'!='true'"
-                 Visible="false" />
-        <!-- checking DesignTimeBuild hides the file from from VS solution explorer which does not yet support 'Visible' -->
-    </ItemGroup>
     <!-- end workaround -->
 </Project>
