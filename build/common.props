@@ -15,6 +15,7 @@
     <PropertyGroup>
         <WarningsAsErrors>true</WarningsAsErrors> <!-- make disabling warnings opt-out -->
         <CustomAfterMicrosoftCommonTargets>$(MSBuildThisFileDirectory)targets\Internal.AspNetCore.Common.targets</CustomAfterMicrosoftCommonTargets>
+        <CustomAfterMicrosoftCommonCrossTargetingTargets>$(MSBuildThisFileDirectory)targets\Internal.AspNetCore.Common.targets</CustomAfterMicrosoftCommonCrossTargetingTargets>
     </PropertyGroup>
 
     <!-- version options -->
