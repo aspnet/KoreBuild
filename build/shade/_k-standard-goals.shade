@@ -249,26 +249,6 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
     nuget-resilient-publish sourcePackagesDir='${BUILD_DIR}' nugetFeed='${E("NUGET_PUBLISH_FEED")}' if='!string.IsNullOrEmpty(E("NUGET_PUBLISH_FEED"))'
   -}
 
-#ci-test
-  @{
-     if (Directory.Exists("test"))
-     {
-       var globalJson = Path.Combine(BASE_DIR, "global.json");
-       if (File.Exists(globalJson))
-       {
-         var original = File.ReadAllText(globalJson);
-         var replaced = original.Replace("src,", null).Replace("src", null);
-         File.WriteAllText(globalJson, replaced);
-       }
-       CallTarget("initialize");
-       var projectFiles = Files.Include(TEST_PROJECT_GLOB);
-       foreach (var projectFile in projectFiles)
-       {
-         DotnetTest(projectFile, Configuration, E("KOREBUILD_DOTNET_TEST_OPTIONS"));
-       }
-     }
-  }
-
 #xunit-test target='test' if='Directory.Exists("test")'
   @{
     var projectFiles = Files.Include(TEST_PROJECT_GLOB);
@@ -281,9 +261,31 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
             // TODO or use TC logger https://github.com/Microsoft/vstest/issues/254
             options += " --logger:trx ";
         }
-        DotnetTest(projectFile, Configuration, options);
+        // workaround for https://github.com/Microsoft/vstest/issues/283
+        var txt = File.ReadAllText(projectFile);
+        var match = Regex.Match(txt, @"\<TargetFrameworks\>(.+)\<\/TargetFrameworks\>");
+        if (match != null && match.Success && !string.IsNullOrEmpty(match.Groups[1].Value))
+        {
+          var frameworks = match.Groups[1]
+            .Value
+            .Split(new string[] {";"}, StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.Trim())
+            .ToArray();
+
+          foreach (var framework in frameworks)
+          {
+            var options2 = options + " --framework " + framework;
+            DotnetTest(projectFile, Configuration, options2);
+          }
+          // end workaround
+        }
+        else
+        {
+          DotnetTest(projectFile, Configuration, options);
+        }
     }
   }
+
 
 #make-roslyn-fast
   ngen-roslyn
