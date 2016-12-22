@@ -65,6 +65,7 @@ else
     # Install the version of dotnet-cli used to compile
     $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
     install_shared_runtime '1.1.0' 'release/1.1.0'
+    install_shared_runtime '1.2.0-beta-001202-00' 'master'
     if [ ! -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION" ]; then
         channel="$KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL"
         [ -z "$channel" ] && channel="master"
