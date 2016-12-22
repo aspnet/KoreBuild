@@ -31,10 +31,8 @@ koreBuildFolder="${scriptRoot/$repoFolder/}"
 koreBuildFolder="${koreBuildFolder#/}"
 
 versionFile="$koreBuildFolder/cli.version"
-version=$(<$versionFile)
-
-[ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=rel-1.0.0
-[ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
+dotnetVersion=$(<$versionFile)
+dotnetChannel="rel-1.0.0"
 
 install_shared_runtime() {
     eval $invocation
@@ -61,6 +59,13 @@ else
     export DOTNET_INSTALL_DIR=$DOTNET_INSTALL_DIR
     export KOREBUILD_FOLDER="$(dirname $koreBuildFolder)"
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
+
+    $koreBuildFolder/dotnet/dotnet-install.sh --channel $dotnetChannel --version $dotnetVersion
+    if [ ! -z "$KOREBUILD_DOTNET_VERSION" ]; then
+        dotnetVersion="$KOREBUILD_DOTNET_VERSION"
+        [ ! -z "$KOREBUILD_DOTNET_CHANNEL" ] && dotnetChannel="$KOREBUILD_DOTNET_CHANNEL"
+        $koreBuildFolder/dotnet/dotnet-install.sh --channel $dotnetChannel --version $dotnetVersion
+    fi
 
     # Install the version of dotnet-cli used to compile
     $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
