@@ -64,6 +64,7 @@ else
 
     $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
     install_shared_runtime '1.0.0' 'preview'
+    install_shared_runtime '1.2.0-beta-001202-00' 'master'
     if [ ! -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION" ]; then
         channel="$KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL"
         [ -z "$channel" ] && channel="master"
