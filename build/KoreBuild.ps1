@@ -15,6 +15,7 @@ $koreBuildFolder = $koreBuildFolder.Replace($repoFolder, "").TrimStart("\")
 $dotnetVersionFile = $koreBuildFolder + "\cli.version"
 $dotnetChannel = "rel-1.0.0"
 $dotnetVersion = Get-Content $dotnetVersionFile
+$sharedRuntimeVersion = Get-Content (Join-Path $koreBuildFolder 'shared-runtime.version')
 
 if ($env:KOREBUILD_DOTNET_CHANNEL)
 {
@@ -53,7 +54,7 @@ else
     # Install the version of dotnet-cli used to compile
     & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
     InstallSharedRuntime '1.1.0' 'release/1.1.0'
-    InstallSharedRuntime '1.2.0-beta-001202-00' 'master'
+    InstallSharedRuntime $sharedRuntimeVersion 'master'
     if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION)
     {
         $channel = 'master'
