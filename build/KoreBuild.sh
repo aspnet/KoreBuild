@@ -32,6 +32,8 @@ koreBuildFolder="${koreBuildFolder#/}"
 
 versionFile="$koreBuildFolder/cli.version"
 version=$(<$versionFile)
+sharedRuntimeVersionFile="$koreBuildFolder/shared-runtime.version"
+sharedRuntimeVersion = $(<$sharedRuntimeVersionFile)
 
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=preview
 [ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
@@ -63,9 +65,8 @@ else
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
     $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
-    $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version 1.0.0-preview2-1-003180
     install_shared_runtime '1.0.0' 'preview'
-    install_shared_runtime '1.2.0-beta-001202-00' 'master'
+    install_shared_runtime $sharedRuntimeVersion 'master'
     if [ ! -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION" ]; then
         channel="$KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL"
         [ -z "$channel" ] && channel="master"
