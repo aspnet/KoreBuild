@@ -33,7 +33,7 @@ koreBuildFolder="${koreBuildFolder#/}"
 versionFile="$koreBuildFolder/cli.version"
 version=$(<$versionFile)
 sharedRuntimeVersionFile="$koreBuildFolder/shared-runtime.version"
-sharedRuntimeVersion = $(<$sharedRuntimeVersionFile)
+sharedRuntimeVersion=$(<$sharedRuntimeVersionFile)
 
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=rel-1.0.0
 [ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
