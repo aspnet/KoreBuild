@@ -254,6 +254,12 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
     var projectFiles = Files.Include(TEST_PROJECT_GLOB);
     foreach (var projectFile in projectFiles)
     {
+        var dir = Path.GetDirectoryName(projectFile);
+        if (File.Exists(Path.Combine(dir, ".notest")))
+        {
+            continue;
+        }
+
         var options = E("KOREBUILD_DOTNET_TEST_OPTIONS");
         if (IsTeamCity)
         {
