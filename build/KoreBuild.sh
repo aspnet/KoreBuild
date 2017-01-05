@@ -99,7 +99,7 @@ if [ ! -d $sakeFolder ]; then
 fi
 
 netFrameworkFolder=$repoFolder/$koreBuildFolder/NETFrameworkReferenceAssemblies
-netFrameworkContentDir=$netFrameworkFolder/4.5.1/content
+netFrameworkContentDir=$netFrameworkFolder/4.6.0/content
 if [ ! -d $netFrameworkFolder ]; then
     xplatToolsProject="$koreBuildFolder/xplat.project.json"
     dotnet restore "$xplatToolsProject" --packages $scriptRoot -v Minimal
