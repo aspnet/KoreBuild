@@ -3,6 +3,6 @@
     "netcoreapp1.0": { }
   },
   "dependencies": {
-    "NETFrameworkReferenceAssemblies": "4.6"
+    "NETFrameworkReferenceAssemblies": "4.6.0"
   }
 }
