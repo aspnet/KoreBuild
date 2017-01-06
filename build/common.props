@@ -3,7 +3,6 @@
     <PropertyGroup>
         <NeutralLanguage>en-US</NeutralLanguage>
         <Company>Microsoft Corporation.</Company>
-        <Product>Microsoft .NET</Product>
         <Authors>Microsoft</Authors>
         <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
         <ProjectUrl>https://asp.net</ProjectUrl>

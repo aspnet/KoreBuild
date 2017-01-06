@@ -20,9 +20,7 @@ for use outside of Microsoft.
         </MSBuild>
 
         <ItemGroup>
-            <_Tmp Include="@(_ProjectReferences)" />
-            <_ProjectReferences Remove="@(_ProjectReferences)" />
-            <_ProjectReferences Include="@(_Tmp)">
+            <_ProjectReferences Update="@(_ProjectReferences)" Condition="'%(PackageVersion)'==''">
                 <PackageVersion>$(Version)</PackageVersion>
             </_ProjectReferences>
 
