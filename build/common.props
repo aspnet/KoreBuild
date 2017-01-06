@@ -19,9 +19,12 @@
 
     <!-- version options -->
     <PropertyGroup>
-        <!-- create second-based build number for local builds -->
-        <_SecondBasedTimeStamp>$([System.DateTime]::UtcNow.Subtract($([System.DateTime]::Parse("2015-01-01"))).TotalSeconds.ToString())</_SecondBasedTimeStamp>
-        <_SecondBasedTimeStamp>t$([System.Int64]::Parse($(_SecondBasedTimeStamp.Substring(0, $(_SecondBasedTimeStamp.IndexOf("."))))).ToString("x9"))</_SecondBasedTimeStamp>
+        <!--
+            Create second-based build number for local builds.
+            635556672000000000 is Jan 1, 2015.
+         -->
+        <_SecondBasedTimeStamp>$([System.DateTime]::UtcNow.Subtract($([System.DateTime]::FromBinary(635556672000000000))).TotalSeconds.ToString("F0"))</_SecondBasedTimeStamp>
+        <_SecondBasedTimeStamp>t$([System.Int64]::Parse($(_SecondBasedTimeStamp)).ToString("x9"))</_SecondBasedTimeStamp>
 
         <!-- for aspnet CI -->
         <BuildNumber Condition="'$(BuildNumber)'==''">$(KOREBUILD_BUILD_NUMBER)</BuildNumber>
