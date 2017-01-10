@@ -13,8 +13,13 @@
     <!-- common build options -->
     <PropertyGroup>
         <WarningsAsErrors>true</WarningsAsErrors> <!-- make disabling warnings opt-out -->
-        <CustomAfterMicrosoftCommonTargets>$(MSBuildThisFileDirectory)targets\Internal.AspNetCore.Common.targets</CustomAfterMicrosoftCommonTargets>
-        <CustomAfterMicrosoftCommonCrossTargetingTargets>$(MSBuildThisFileDirectory)targets\Internal.AspNetCore.Common.targets</CustomAfterMicrosoftCommonCrossTargetingTargets>
+    </PropertyGroup>
+
+    <!-- extend the build lifecycle -->
+    <PropertyGroup>
+        <CustomBeforeMicrosoftCommonProps>$(MSBuildThisFileDirectory)targets\Internal.AspNetCore.BeforeCommon.props</CustomBeforeMicrosoftCommonProps>
+        <CustomAfterMicrosoftCommonTargets>$(MSBuildThisFileDirectory)targets\Internal.AspNetCore.AfterCommon.targets</CustomAfterMicrosoftCommonTargets>
+        <CustomAfterMicrosoftCommonCrossTargetingTargets>$(MSBuildThisFileDirectory)targets\Internal.AspNetCore.AfterCommon.targets</CustomAfterMicrosoftCommonCrossTargetingTargets>
     </PropertyGroup>
 
     <!-- version options -->
