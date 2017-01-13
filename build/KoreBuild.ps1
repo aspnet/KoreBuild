@@ -86,20 +86,7 @@ $sharedPath = (Join-Path (Split-Path ((get-command dotnet.exe).Path) -Parent) "s
 if (!(Test-Path "$koreBuildFolder\Sake"))
 {
     $toolsProject = "$koreBuildFolder\tools.proj"
-    if (!(Test-Path $toolsProject))
-    {
-        if (Test-Path "$toolsProject.norestore")
-        {
-            mv "$toolsProject.norestore" "$toolsProject"
-        }
-        else
-        {
-            throw "Unable to find $toolsProject"
-        }
-    }
     &dotnet restore "$toolsProject" --packages "$PSScriptRoot" -v Minimal
-    # Rename the project after restore because we don't want it to be restore afterwards
-    mv "$toolsProject" "$toolsProject.norestore"
     # We still nuget because dotnet doesn't have support for pushing packages
     Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/v3.5.0-beta2/NuGet.exe" -OutFile "$koreBuildFolder/nuget.exe"
 }

@@ -1,6 +1,7 @@
 ﻿<Project>
   <PropertyGroup>
     <TargetFrameworks>netcoreapp1.0</TargetFrameworks>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
 
   <ItemGroup>
