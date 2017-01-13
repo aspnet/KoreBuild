@@ -22,15 +22,7 @@ default framework = ''
 @{
     var projectFolder = Path.GetDirectoryName(projectFile);
     var projectName = Path.GetFileName(projectFolder);
-
-    var noParallelTestProjects = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-    if (!string.IsNullOrEmpty(NO_PARALLEL_TEST_PROJECTS))
-    {
-        noParallelTestProjects.UnionWith(NO_PARALLEL_TEST_PROJECTS.Split((char)','));
-    }
-
     var testArgs = test_options + " --configuration " + configuration;
-    testArgs += noParallelTestProjects.Contains(projectName) ? " -parallel none" : "";
 
     if (!string.IsNullOrEmpty(framework))
     {
