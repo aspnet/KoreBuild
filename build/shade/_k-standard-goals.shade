@@ -82,7 +82,14 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
 
 #repo-initialize target='initialize'
   use-volatile-feed
-  dotnet-restore if='!NoRestore'
+  -//dotnet-restore if='!NoRestore'
+  @{
+    // workaround https://github.com/Microsoft/msbuild/issues/1587
+    if (!NoRestore)
+    {
+      Dotnet("msbuild \"" + Path.Combine(BASE_DIR, ".build/restore.proj") + "\"");
+    }
+  }
 
 #target-dir-clean target='clean'
   @{

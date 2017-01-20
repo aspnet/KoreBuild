@@ -1,0 +1,10 @@
+<!-- workaround https://github.com/Microsoft/msbuild/issues/1587 -->
+<Project DefaultTargets="Restore">
+    <ItemGroup>
+        <RestoreGraphProjectInputItems Include="..\src\*\*.csproj" />
+        <RestoreGraphProjectInputItems Include="..\test\*\*.csproj" />
+        <RestoreGraphProjectInputItems Include="..\samples\*\*.csproj" />
+        <RestoreGraphProjectInputItems Include="..\tools\*\*.csproj" />
+    </ItemGroup>
+    <Import Project="$(MSBuildToolsPath)\NuGet.targets" />
+</Project>
