@@ -52,8 +52,6 @@ if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 else
 {
     # Install the version of dotnet-cli used to compile
-    # TODO temporarily install preview4 while we move to RC3
-    & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version 1.0.0-preview4-004233 -Architecture x64
     & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
     InstallSharedRuntime '1.1.0' 'release/1.1.0'
 

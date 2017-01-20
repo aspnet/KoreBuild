@@ -65,8 +65,6 @@ else
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
     # Install the version of dotnet-cli used to compile
-    # TODO temporarily install preview4 while we move to RC3
-    $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version 1.0.0-preview4-004233
     $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
     install_shared_runtime '1.1.0' 'release/1.1.0'
     install_shared_runtime $sharedRuntimeVersion 'master'
