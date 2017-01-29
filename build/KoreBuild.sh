@@ -61,7 +61,7 @@ else
     export KOREBUILD_FOLDER="$(dirname $koreBuildFolder)"
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
-    $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
+    $koreBuildFolder/dotnet/dotnet-install.sh --channel preview --version $version
     install_shared_runtime '1.0.0' 'preview'
     install_shared_runtime $sharedRuntimeVersion 'master'
     if [ ! -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION" ]; then
