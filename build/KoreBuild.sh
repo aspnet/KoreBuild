@@ -9,7 +9,11 @@ while [[ $# > 0 ]]; do
             repoFolder=$1
             ;;
         *)
-            targets+=" $1"
+            if [ -z "$targets" ]; then
+                targets="$1"
+            else
+                targets+=" $1"
+            fi
             ;;
     esac
     shift
@@ -110,10 +114,10 @@ if [ ! -f $nugetPath ]; then
     wget -O $nugetPath $nugetUrl 2>/dev/null || curl -o $nugetPath --location $nugetUrl 2>/dev/null
 fi
 
-makeFile="makefile.shade"
-if [ ! -e $makeFile ]; then
-    makeFile="$koreBuildFolder/shade/makefile.shade"
+export KOREBUILD_FOLDER="$koreBuildFolder"
+if [ ! -z "$targets" ]; then
+    targets="/t:${targets// /;}"
 fi
 
-export KOREBUILD_FOLDER="$koreBuildFolder"
-mono $sakeFolder/0.2.2/tools/Sake.exe -I $koreBuildFolder/shade -f $makeFile $targets
+makeFileProj="$koreBuildFolder/targets/makefile.proj"
+dotnet msbuild $makeFileProj /p:KoreBuildDirectory="$koreBuildFolder/" /p:RepositoryRoot="$repoFolder/" $targets

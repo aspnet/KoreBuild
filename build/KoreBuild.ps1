@@ -1,5 +1,7 @@
 #requires -version 4
 
+param([parameter(ValueFromRemainingArguments=$true)][string[]] $allparams)
+
 $repoFolder = $env:REPO_FOLDER
 if (!$repoFolder) {
     throw "REPO_FOLDER is not set"
@@ -91,13 +93,9 @@ if (!(Test-Path "$koreBuildFolder\Sake"))
     Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/v3.5.0-beta2/NuGet.exe" -OutFile "$koreBuildFolder/nuget.exe"
 }
 
-$makeFilePath = "makefile.shade"
-if (!(Test-Path $makeFilePath))
-{
-    $makeFilePath = "$koreBuildFolder\shade\makefile.shade"
-}
-
-Write-Host "Using makefile: $makeFilePath"
-
 $env:KOREBUILD_FOLDER=$koreBuildFolder
-&"$koreBuildFolder\Sake\0.2.2\tools\Sake.exe" -I $koreBuildFolder\shade -f $makeFilePath @args
+$makeFileProj = "$koreBuildFolder/targets/makefile.proj"
+if ($allparams) {
+    $targets = '/t:' + $allparams.Replace(' ', ';')
+}
+dotnet msbuild $makeFileProj /p:KoreBuildDirectory="$koreBuildFolder\" /p:RepositoryRoot="$repoFolder\" $targets
