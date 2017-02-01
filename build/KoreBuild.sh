@@ -10,9 +10,9 @@ while [[ $# > 0 ]]; do
             ;;
         *)
             if [ -z "$targets" ]; then
-                targets="$1"
+                targets="/t:$1"
             else
-                targets+=" $1"
+                targets+=";$1"
             fi
             ;;
     esac
@@ -115,9 +115,27 @@ if [ ! -f $nugetPath ]; then
 fi
 
 export KOREBUILD_FOLDER="$koreBuildFolder"
-if [ ! -z "$targets" ]; then
-    targets="/t:${targets// /;}"
-fi
+
 
 makeFileProj="$koreBuildFolder/targets/makefile.proj"
-dotnet msbuild $makeFileProj /p:KoreBuildDirectory="$koreBuildFolder/" /p:RepositoryRoot="$repoFolder/" $targets
+msbuildArtifactsDir="$repoFolder/artifacts/msbuild"
+msbuildResponseFile="$msbuildArtifactsDir/msbuild.rsp"
+msbuildLogFile="$msbuildArtifactsDir/msbuild.log"
+
+if [ ! -f $msbuildArtifactsDir ]; then
+    mkdir -p $msbuildArtifactsDir
+fi
+
+cat > $msbuildResponseFile <<ENDMSBUILDARGS
+/nologo
+/m
+/detailedsummary
+"$makeFileProj"
+/p:KoreBuildDirectory="$koreBuildFolder/"
+/p:RepositoryRoot="$repoFolder/"
+/fl
+-flp:LogFile="$msbuildLogFile";Verbosity=diagnostic;Encoding=UTF-8
+$targets
+ENDMSBUILDARGS
+
+dotnet msbuild @"$msbuildResponseFile"

@@ -2,11 +2,13 @@
   <PropertyGroup>
     <UseLegacyLifecycle Condition="'$(UseLegacyLifecycle)'==''">true</UseLegacyLifecycle>
     <UseStandardLifecycle Condition="'$(UseLegacyLifecycle)'!='true' AND '$(UseStandardLifecycle)'==''">true</UseStandardLifecycle>
-  </PropertyGroup> 
+  </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\common.props" />
+  <Import Project="$(RepositoryRoot)build\repo.props" Condition="Exists('$(RepositoryRoot)build\repo.props')" />
+
   <Import Project="$(MSBuildThisFileDirectory)\legacy-lifecycle.targets" Condition="'$(UseLegacyLifecycle)'=='true'" />
   <Import Project="$(MSBuildThisFileDirectory)\standard-lifecycle.targets" Condition="'$(UseStandardLifecycle)'=='true'" />
 
-  <Import Project="$(RepositoryRoot)\build\repo.targets" Condition="Exists('$(RepositoryRoot)\build\repo.targets')" />
+  <Import Project="$(RepositoryRoot)build\repo.targets" Condition="Exists('$(RepositoryRoot)build\repo.targets')" />
 </Project>

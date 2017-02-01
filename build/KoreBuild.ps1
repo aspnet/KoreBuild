@@ -95,7 +95,32 @@ if (!(Test-Path "$koreBuildFolder\Sake"))
 
 $env:KOREBUILD_FOLDER=$koreBuildFolder
 $makeFileProj = "$koreBuildFolder/targets/makefile.proj"
-if ($allparams) {
-    $targets = '/t:' + $allparams.Replace(' ', ';')
+
+$msbuildArtifactsDir = "$repoFolder/artifacts/msbuild"
+$msbuildLogFilePath = "$msbuildArtifactsDir/msbuild.log"
+$msBuildResponseFile = "$msbuildArtifactsDir/msbuild.rsp"
+
+if ($allparams)
+{
+    $targets += "/t:$($allparams.Replace(' ', ';'))"
 }
-dotnet msbuild $makeFileProj /p:KoreBuildDirectory="$koreBuildFolder\" /p:RepositoryRoot="$repoFolder\" $targets
+
+$msBuildArguments = @"
+/nologo
+/m
+/detailedsummary
+"$makeFileProj"
+/p:KoreBuildDirectory="$koreBuildFolder/"
+/p:RepositoryRoot="$repoFolder/"
+/fl
+/flp:LogFile="$msbuildLogFilePath";Verbosity=diagnostic;Encoding=UTF-8
+$targets
+"@
+
+if (!(Test-Path $msbuildArtifactsDir))
+{
+    mkdir $msbuildArtifactsDir | Out-Null
+}
+$msBuildArguments | Out-File -Encoding ASCII -FilePath $msBuildResponseFile
+
+dotnet msbuild `@"$msBuildResponseFile"
