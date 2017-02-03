@@ -91,7 +91,7 @@ if [ "$(uname)" == "Darwin" ]; then
     ulimit -n 2048
 fi
 
-netfxversion='4.6.0'
+netfxversion='4.6.1'
 netFrameworkFolder=$repoFolder/$koreBuildFolder/netframeworkreferenceassemblies
 netFrameworkContentDir=$netFrameworkFolder/$netfxversion/content
 sakeFolder=$koreBuildFolder/sake
