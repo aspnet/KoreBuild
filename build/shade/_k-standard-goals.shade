@@ -98,16 +98,12 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
           var directory = new DirectoryInfo(TARGET_DIR);
           directory.Attributes &= ~FileAttributes.ReadOnly;
 
-          foreach (var subDirectory in directory.GetDirectories().Where(d => d.Name != "msbuild"))
+          foreach (var info in directory.GetFileSystemInfos("*", SearchOption.AllDirectories))
           {
-              subDirectory.Attributes &= ~FileAttributes.ReadOnly;
-              subDirectory.Delete(true);
+              info.Attributes &= ~FileAttributes.ReadOnly;
           }
 
-          foreach (var file in directory.EnumerateFiles())
-          {
-            file.Delete();
-          }
+          directory.Delete(true);
         }
     }
 

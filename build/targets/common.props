@@ -1,6 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <BuildDir>$(RepositoryRoot)\build</BuildDir>
-    <ArtifactsDir>$(BuildDir)\artifacts</ArtifactsDir>
-  </PropertyGroup>
-</Project>
