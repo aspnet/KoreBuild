@@ -154,13 +154,15 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
 
       projectGlobs.AddRange(srcProjects);
     }
+
     if (!BuildSrcOnly && Directory.Exists("test"))
     {
-        projectGlobs.AddRange(Files.Include(TEST_PROJECT_GLOB).ToList());
+      projectGlobs.AddRange(Files.Include(TEST_PROJECT_GLOB).ToList());
     }
-    if (!BuildSrcOnly && Directory.Exists("samples") && Directory.EnumerateFiles("samples", "*.csproj", SearchOption.AllDirectories).Any())
+
+    if (!BuildSrcOnly && Directory.Exists("samples"))
     {
-        projectGlobs.AddRange(Files.Include(SAMPLES_PROJECT_GLOB).ToList());
+      projectGlobs.AddRange(Files.Include(SAMPLES_PROJECT_GLOB).ToList());
     }
 
     if (projectGlobs.Any())
