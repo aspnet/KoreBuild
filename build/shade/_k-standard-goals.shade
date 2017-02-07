@@ -36,10 +36,6 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
   @{
     Configuration = "Release";
     E("Configuration", Configuration);
-    if (string.IsNullOrEmpty(E("KOREBUILD_ADD_ASSEMBLY_INFO")))
-    {
-      E("KOREBUILD_ADD_ASSEMBLY_INFO", "1");
-    }
 
     E("KOREBUILD_VERIFY_NUPKGS", "1");
   }
@@ -120,38 +116,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
     if (Directory.Exists("src"))
     {
       Directory.CreateDirectory(TARGET_DIR);
-
-      string commitHash = null;
-      if (AddAssemblyInfo)
-      {
-          var commitHashFile = Path.Combine(TARGET_DIR, "commit");
-          GitCommand("rev-parse HEAD >> " + commitHashFile);
-          commitHash = File.ReadAllLines(commitHashFile)[0];
-      }
-
       srcProjects = Files.Include(SRC_PROJECT_GLOB).ToList();
-      srcProjects.ForEach(projectFile =>
-      {
-          if (AddAssemblyInfo)
-          {
-              // var projectText = File.ReadAllText(projectFile);
-              // var project = (JsonObject)Json.Deserialize(projectText);
-              // var isSharedProject = project.Keys.Contains("shared");
-              var isSharedProject = false;
-              // We don't want to embed the commit hash in it because
-              // the consumers would get that file
-              if (!isSharedProject)
-              {
-                  Console.WriteLine("Embedding commit hash in assembly");
-                  var projectFolder = Path.GetDirectoryName(projectFile);
-                  var commitHashAttribute = String.Format("[assembly: System.Reflection.AssemblyMetadata(\"CommitHash\", \"{0}\")]", commitHash);
-
-                  var buildInfoFile = Path.Combine(projectFolder, "BuildInfo.generated.cs");
-                  File.WriteAllText(buildInfoFile, commitHashAttribute);
-              }
-          }
-      });
-
       projectGlobs.AddRange(srcProjects);
     }
 
@@ -440,11 +405,6 @@ functions @{
     bool BuildSrcOnly
     {
       get { return E("KOREBUILD_BUILD_SRC_ONLY") == "1"; }
-    }
-
-    bool AddAssemblyInfo
-    {
-      get { return E("KOREBUILD_ADD_ASSEMBLY_INFO") == "1"; }
     }
 
     string BuildFramework
