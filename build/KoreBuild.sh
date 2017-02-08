@@ -1,5 +1,28 @@
 #!/usr/bin/env bash
 
+# Colors
+GREEN="\033[1;32m"
+CYAN="\033[0;36m"
+RESET="\033[0m"
+RED="\033[0;31m"
+
+# functions
+
+__exec() {
+    local cmd=$1
+    shift
+
+    local cmdname=$(basename $cmd)
+    echo -e "${CYAN}> $cmdname $@${RESET}"
+    $cmd "$@"
+
+    local exitCode=$?
+    if [ $exitCode -ne 0 ]; then
+        echo -e "${RED}'$cmdname $@' failed with exit code $exitCode${RESET}" 1>&2
+        exit $exitCode
+    fi
+}
+
 targets=""
 repoFolder=""
 while [[ $# > 0 ]]; do
@@ -10,9 +33,9 @@ while [[ $# > 0 ]]; do
             ;;
         *)
             if [ -z "$targets" ]; then
-                targets="/t:$1"
+                targets="$1"
             else
-                targets+=";$1"
+                targets+=":$1"
             fi
             ;;
     esac
@@ -96,28 +119,22 @@ if [ "$(uname)" == "Darwin" ]; then
 fi
 
 netfxversion='4.6.1'
-netFrameworkFolder=$repoFolder/$koreBuildFolder/netframeworkreferenceassemblies
-netFrameworkContentDir=$netFrameworkFolder/$netfxversion/content
-sakeFolder=$koreBuildFolder/sake
-if [ ! -d $sakeFolder ]; then
-    toolsProject="$koreBuildFolder/tools.proj"
-    dotnet restore "$toolsProject" --packages $scriptRoot -v Minimal "/p:NetFxVersion=$netfxversion"
-    # Rename the project after restore because we don't want it to be restore afterwards
-    mv "$toolsProject" "$toolsProject.norestore"
+if [ "$NUGET_PACKAGES" == "" ]; then
+    NUGET_PACKAGES="$HOME/.nuget/packages"
 fi
-
-export ReferenceAssemblyRoot=$netFrameworkContentDir
+export ReferenceAssemblyRoot=$NUGET_PACKAGES/netframeworkreferenceassemblies/$netfxversion/content
 
 nugetPath="$koreBuildFolder/nuget.exe"
 if [ ! -f $nugetPath ]; then
-    nugetUrl="https://dist.nuget.org/win-x86-commandline/v3.5.0-beta2/NuGet.exe"
+    nugetUrl="https://dist.nuget.org/win-x86-commandline/v4.0.0-rc4/NuGet.exe"
     wget -O $nugetPath $nugetUrl 2>/dev/null || curl -o $nugetPath --location $nugetUrl 2>/dev/null
 fi
 
 export KOREBUILD_FOLDER="$koreBuildFolder"
+makeFileProj="$koreBuildFolder/makefile.proj"
 
+__exec dotnet restore "$makeFileProj" "/p:NetFxVersion=$netfxversion"
 
-makeFileProj="$koreBuildFolder/targets/makefile.proj"
 msbuildArtifactsDir="$repoFolder/artifacts/msbuild"
 msbuildResponseFile="$msbuildArtifactsDir/msbuild.rsp"
 msbuildLogFile="$msbuildArtifactsDir/msbuild.log"
@@ -129,13 +146,11 @@ fi
 cat > $msbuildResponseFile <<ENDMSBUILDARGS
 /nologo
 /m
-/detailedsummary
 "$makeFileProj"
-/p:KoreBuildDirectory="$koreBuildFolder/"
 /p:RepositoryRoot="$repoFolder/"
 /fl
--flp:LogFile="$msbuildLogFile";Verbosity=diagnostic;Encoding=UTF-8
-$targets
+/flp:LogFile="$msbuildLogFile";Verbosity=diagnostic;Encoding=UTF-8
+/p:SakeTargets=$targets
 ENDMSBUILDARGS
 
-dotnet msbuild @"$msbuildResponseFile"
+__exec dotnet msbuild @"$msbuildResponseFile"

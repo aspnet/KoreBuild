@@ -1,0 +1,37 @@
+<Project>
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
+    <LifecycleType>Legacy</LifecycleType>
+    <!-- TFM used only for the purpose of restoring build tools. It does not affect the TFM of projects -->
+    <TargetFramework>netcoreapp1.0</TargetFramework>
+    <SakeVersion>0.2.2</SakeVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NETFrameworkReferenceAssemblies" Version="$(NetFxVersion)" Condition="'$(NetFxVersion)'!=''" />
+    <PackageReference Include="NuGetPackageVerifier" Version="1.0.2-*"/>
+    <PackageReference Include="Sake" Version="$(SakeVersion)" />
+  </ItemGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)\targets\common.props" />
+
+  <ItemGroup>
+    <Solutions Include="$(RepositoryRoot)\*.sln" />
+  </ItemGroup>
+
+  <!-- import Microsoft.Common targets which will import NuGet-->
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+
+  <!-- undo some special Microsoft.Common properties since this isn't a normal project -->
+  <PropertyGroup>
+    <_InvalidConfigurationWarn>false</_InvalidConfigurationWarn>
+    <_InvalidConfigurationError>false</_InvalidConfigurationError>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryRoot)build\repo.props" Condition="Exists('$(RepositoryRoot)build\repo.props')" />
+
+  <Import Project="$(MSBuildThisFileDirectory)\targets\legacy-lifecycle.targets" Condition="'$(LifecycleType)'=='Legacy'" />
+  <Import Project="$(MSBuildThisFileDirectory)\targets\standard-lifecycle.targets" Condition="'$(LifecycleType)'=='Standard'" />
+
+  <Import Project="$(RepositoryRoot)build\repo.targets" Condition="Exists('$(RepositoryRoot)build\repo.targets')" />
+</Project>

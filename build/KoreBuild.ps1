@@ -2,6 +2,16 @@
 
 param([parameter(ValueFromRemainingArguments=$true)][string[]] $allparams)
 
+function exec($cmd) {
+    $cmdName = [IO.Path]::GetFileName($cmd)
+    Write-Host -ForegroundColor Cyan "> $cmdName $args"
+    & $cmd @args
+    $exitCode = $LASTEXITCODE
+    if($exitCode -ne 0) {
+        throw "'$cmdName $args' failed with exit code: $exitCode"
+    }
+}
+
 $repoFolder = $env:REPO_FOLDER
 if (!$repoFolder) {
     throw "REPO_FOLDER is not set"
@@ -85,37 +95,28 @@ if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
 $sharedPath = (Join-Path (Split-Path ((get-command dotnet.exe).Path) -Parent) "shared");
 (Get-ChildItem $sharedPath -Recurse *dotnet.exe) | %{ $_.FullName } | Remove-Item;
 
-if (!(Test-Path "$koreBuildFolder\Sake"))
-{
-    $toolsProject = "$koreBuildFolder\tools.proj"
-    &dotnet restore "$toolsProject" --packages "$PSScriptRoot" -v Minimal
-    # We still nuget because dotnet doesn't have support for pushing packages
-    Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/v3.5.0-beta2/NuGet.exe" -OutFile "$koreBuildFolder/nuget.exe"
-}
+# We still nuget because dotnet doesn't have support for pushing packages
+# TODO remove. dotnet nuget push now exists
+Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/v4.0.0-rc4/NuGet.exe" -OutFile "$koreBuildFolder/nuget.exe"
 
 $env:KOREBUILD_FOLDER=$koreBuildFolder
-$makeFileProj = "$koreBuildFolder/targets/makefile.proj"
+$makeFileProj = "$koreBuildFolder/makefile.proj"
+exec dotnet restore "$makeFileProj"
 
 $msbuildArtifactsDir = "$repoFolder/artifacts/msbuild"
 $msbuildLogFilePath = "$msbuildArtifactsDir/msbuild.log"
 $msBuildResponseFile = "$msbuildArtifactsDir/msbuild.rsp"
 
-if ($allparams)
-{
-    $targets += "/t:$($allparams.Replace(' ', ';'))"
-}
-
 $msBuildArguments = @"
 /nologo
 /m
-/detailedsummary
 "$makeFileProj"
-/p:KoreBuildDirectory="$koreBuildFolder/"
 /p:RepositoryRoot="$repoFolder/"
 /fl
 /flp:LogFile="$msbuildLogFilePath";Verbosity=diagnostic;Encoding=UTF-8
-$targets
+/p:SakeTargets=$($allparams -replace ' ',':')
 "@
+
 
 if (!(Test-Path $msbuildArtifactsDir))
 {
@@ -123,4 +124,4 @@ if (!(Test-Path $msbuildArtifactsDir))
 }
 $msBuildArguments | Out-File -Encoding ASCII -FilePath $msBuildResponseFile
 
-dotnet msbuild `@"$msBuildResponseFile"
+exec dotnet build `@"$msBuildResponseFile"

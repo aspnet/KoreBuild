@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
-    <BuildDir>$(RepositoryRoot)\build</BuildDir>
-    <ArtifactsDir>$(BuildDir)\artifacts</ArtifactsDir>
+    <RepositoryRoot Condition="'$(RepositoryRoot)'==''">$(MSBuildThisFileDirectory)..\..\</RepositoryRoot>
+    <ArtifactsDir>$(RepositoryRoot)artifacts\</ArtifactsDir>
+    <BuildDir>$(ArtifactsDir)build\</BuildDir>
   </PropertyGroup>
 </Project>

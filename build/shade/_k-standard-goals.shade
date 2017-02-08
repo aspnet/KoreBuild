@@ -13,12 +13,8 @@ use-ci-loggers
 default BASE_DIR='${Directory.GetCurrentDirectory()}'
 default TARGET_DIR='${Path.Combine(BASE_DIR, "artifacts")}'
 default BUILD_DIR='${Path.Combine(TARGET_DIR, "build")}'
-default TEST_DIR='${Path.Combine(TARGET_DIR, "test")}'
 default Configuration='${E("Configuration")}'
-default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
-default SRC_PROJECT_GLOB = "src/*/*.csproj"
 default TEST_PROJECT_GLOB = "test/*/*.csproj"
-default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
 
 @{
   if (string.IsNullOrEmpty(E("BuildNumber")))
@@ -32,12 +28,22 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
   }
 }
 
+functions
+  @{
+    // convenince method as we incrementally move to MSBuild standard lifecycle
+    void MSBuild(string arguments)
+    {
+      Dotnet("msbuild /nologo"
+             + " \"" + Path.Combine(Directory.GetCurrentDirectory(), ".build/makefile.proj") + "\""
+             + " \"/p:LifecycleType=Standard;Configuration=" + E("Configuration") + "\""
+             + " " + arguments);
+    }
+  }
+
 #--for-ci
   @{
     Configuration = "Release";
     E("Configuration", Configuration);
-
-    E("KOREBUILD_VERIFY_NUPKGS", "1");
   }
 
 #restore-npm-modules
@@ -76,15 +82,10 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
 -// Target order is important because clean-npm-modules may (re)create bin folder.
 #deep-clean .clean-npm-modules .clean-bin-folder description='Clean folders that may cause problems for `git clean`.'
 
-#repo-initialize target='initialize'
+#repo-initialize target='initialize' if='!NoRestore'
   use-volatile-feed
-  -//dotnet-restore if='!NoRestore'
   @{
-    // workaround https://github.com/Microsoft/msbuild/issues/1587
-    if (!NoRestore)
-    {
-      Dotnet("msbuild \"" + Path.Combine(BASE_DIR, ".build/restore.proj") + "\"");
-    }
+    MSBuild("/t:Restore");
   }
 
 #target-dir-clean target='clean'
@@ -114,33 +115,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
 
 #build-compile target='compile'
   @{
-    var projectGlobs = new List<string>();
-    List<string> srcProjects = null;
-
-    if (Directory.Exists("src"))
-    {
-      Directory.CreateDirectory(TARGET_DIR);
-      srcProjects = Files.Include(SRC_PROJECT_GLOB).ToList();
-      projectGlobs.AddRange(srcProjects);
-    }
-
-    if (!BuildSrcOnly && Directory.Exists("test"))
-    {
-      projectGlobs.AddRange(Files.Include(TEST_PROJECT_GLOB).ToList());
-    }
-
-    if (!BuildSrcOnly && Directory.Exists("samples"))
-    {
-      projectGlobs.AddRange(Files.Include(SAMPLES_PROJECT_GLOB).ToList());
-    }
-
-    if (projectGlobs.Any())
-    {
-      foreach (var project in projectGlobs)
-      {
-        DotnetBuild(project, Configuration, BuildFramework);
-      }
-    }
+    MSBuild("/t:Compile");
   }
 
 #run-api-check .build-compile target='compile' description='Checks the compiled assemblies against a baseline for potential breaking changes'
@@ -148,23 +123,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
 
 #build-pack .build-compile target='compile'
   @{
-    if (Directory.Exists("src"))
-    {
-      Directory.CreateDirectory(BUILD_DIR);
-      var srcProjects = Files.Include(SRC_PROJECT_GLOB).ToList();
-      if (srcProjects != null && srcProjects.Count > 0)
-      {
-        srcProjects.ForEach(projectFile =>
-        {
-            DotnetPack(projectFile, BUILD_DIR, Configuration, E("KOREBUILD_DOTNET_PACK_OPTIONS") + " --no-build");
-        });
-
-        foreach (var nupkg in Files.Include(Path.Combine(BUILD_DIR, "*/" + Configuration + "/*.nupkg")))
-        {
-            File.Copy(nupkg, Path.Combine(BUILD_DIR, Path.GetFileName(nupkg)), true);
-        }
-      }
-    }
+    MSBuild("/t:Package");
   }
 
 #native-compile target='compile' if='!IsLinux && Directory.Exists(Path.Combine(BASE_DIR, "src"))'
@@ -210,15 +169,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/*.csproj"
 
 #nuget-verify target='package' description='Verify if all the packages are generated properly'
   @{
-      if (Directory.Exists("src") && File.Exists(PACKAGELIST_JSON_FILENAME))
-      {
-        var verifierDirectory = Directory.EnumerateDirectories(Path.Combine(KoreBuildFolderPath, "nugetpackageverifier")).First();
-        Dotnet(
-            string.Format("\"{0}\" \"{1}\" \"{2}\"",
-            Path.Combine(verifierDirectory, "NuGetPackageVerifier.dll"),
-            BUILD_DIR.TrimEnd(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }),
-            Path.Combine(BASE_DIR, PACKAGELIST_JSON_FILENAME)));
-      }
+      MSBuild("/t:VerifyPackages");
   }
 
 #nuget-install target='install' description='Install NuGet packages to local repo'

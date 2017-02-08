@@ -1,17 +1,57 @@
 <Project>
-  <Target Name="Default" DependsOnTargets="Build" />
 
-  <Target Name="Build" DependsOnTargets="Clean;Initialize;Compile;Test;Verify;Publish" />
+  <PropertyGroup>
+    <NuGetVerifierRuleFile>$(RepositoryRoot)NuGetPackageVerifier.json</NuGetVerifierRuleFile>
+  </PropertyGroup>
 
-  <Target Name="Clean" />
+  <!-- default targets -->
+  <Target Name="Build" DependsOnTargets="Clean;Restore;Compile;Package;Test;Verify" />
 
-  <Target Name="Initialize" />
+  <Target Name="Clean">
+    <RemoveDir Directories="$(BuildDir)" />
+    <MSBuild Targets="Clean"
+              Projects="@(Solutions)"
+              Properties="Configuration=$(Configuration)" />
+  </Target>
 
-  <Target Name="Compile" />
+  <Target Name="Restore">
+    <MSBuild Targets="Restore"
+             Projects="@(Solutions)"
+             Properties="Configuration=$(Configuration)" />
+  </Target>
 
+  <Target Name="Compile">
+    <MSBuild Targets="Build"
+             Projects="@(Solutions)"
+             Properties="Configuration=$(Configuration)" />
+  </Target>
+
+  <Target Name="Package">
+    <!-- TODO consider using GeneratePackageOnBuild or calling Pack on the solution. Requires setting IsPackable=false on test and samples -->
+    <ItemGroup>
+      <ProjectsToPack Include="$(RepositoryRoot)src\*\*.csproj" />
+    </ItemGroup>
+    <MSBuild Targets="Pack"
+             Projects="@(ProjectsToPack)"
+             Properties="Configuration=$(Configuration);PackageOutputPath=$(BuildDir)" />
+  </Target>
+
+  <!-- TODO -->
   <Target Name="Test" />
 
-  <Target Name="Verify" />
+  <Target Name="Verify" DependsOnTargets="VerifyPackages" />
 
-  <Target Name="Publish" />
+  <Target Name="VerifyPackages">
+    <ItemGroup>
+      <Packages Include="$(BuildDir)*.nupkg" />
+    </ItemGroup>
+    <Warning Text="No nupkg found in '$(BuildDir)'." Condition="$(Packages -> Count()) == 0" />
+    <Warning Text="Skipping nuget package verification because artifacts directory could not be found"
+             Condition="!Exists('$(BuildDir)')" />
+
+    <VerifyPackages ArtifactDirectory="$(BuildDir)"
+                    RuleFile="$(NuGetVerifierRuleFile)"
+                    Condition="Exists('$(NuGetVerifierRuleFile)') AND Exists('$(BuildDir)')" />
+  </Target>
+
 </Project>
