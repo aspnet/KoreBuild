@@ -98,7 +98,7 @@ if (!(Test-Path "$koreBuildFolder\Sake"))
     }
 
     # We still nuget because dotnet doesn't have support for pushing packages
-    Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/v3.5.0-beta2/NuGet.exe" -OutFile "$koreBuildFolder/nuget.exe"
+    Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/v4.0.0-rc4/NuGet.exe" -OutFile "$koreBuildFolder/nuget.exe"
 }
 
 $makeFilePath = "makefile.shade"

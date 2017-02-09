@@ -69,7 +69,7 @@ $BinFolderRelativePath=""
 
 # example path with regex: shared/1.0.0-beta-12345/somepath
 $VersionRegEx="/\d+\.\d+[^/]+/"
-$OverrideNonVersionedFiles=$true
+$OverrideNonVersionedFiles=$false
 
 function Say($str) {
     Write-Host "dotnet-install: $str"
@@ -125,7 +125,7 @@ function Get-Latest-Version-Info([string]$AzureFeed, [string]$AzureChannel, [str
     else {
         $VersionFileUrl = "$AzureFeed/$AzureChannel/dnvm/latest.win.$CLIArchitecture.version"
     }
-    
+
     $Response = Invoke-WebRequest -UseBasicParsing $VersionFileUrl
 
     switch ($Response.Headers.'Content-Type'){
@@ -133,7 +133,7 @@ function Get-Latest-Version-Info([string]$AzureFeed, [string]$AzureChannel, [str
         { ($_ -eq "text/plain") } { $VersionText = $Response.Content }
         default { throw "``$Response.Headers.'Content-Type'`` is an unknown .version file content type." }
     }
-    
+
 
     $VersionInfo = Get-Version-Info-From-Version-Text $VersionText
 
@@ -169,7 +169,7 @@ function Get-Specific-Version-From-Version([string]$AzureFeed, [string]$AzureCha
 
 function Get-Download-Links([string]$AzureFeed, [string]$AzureChannel, [string]$SpecificVersion, [string]$CLIArchitecture) {
     Say-Invocation $MyInvocation
-    
+
     $ret = @()
     $files = @()
     if ($SharedRuntime) {
@@ -178,7 +178,7 @@ function Get-Download-Links([string]$AzureFeed, [string]$AzureChannel, [string]$
     else {
         $files += "dotnet-dev";
     }
-    
+
     foreach ($file in $files) {
         $PayloadURL = "$AzureFeed/$AzureChannel/Binaries/$SpecificVersion/$file-win-$CLIArchitecture.$SpecificVersion.zip"
         Say-Verbose "Constructed payload URL: $PayloadURL"
@@ -212,7 +212,7 @@ function Get-Version-Info-From-Version-File([string]$InstallRoot, [string]$Relat
 
     $VersionFile = Join-Path -Path $InstallRoot -ChildPath $RelativePathToVersionFile
     Say-Verbose "Local version file: $VersionFile"
-    
+
     if (Test-Path $VersionFile) {
         $VersionText = cat $VersionFile
         Say-Verbose "Local version file text: $VersionText"
@@ -226,7 +226,7 @@ function Get-Version-Info-From-Version-File([string]$InstallRoot, [string]$Relat
 
 function Is-Dotnet-Package-Installed([string]$InstallRoot, [string]$RelativePathToPackage, [string]$SpecificVersion) {
     Say-Invocation $MyInvocation
-    
+
     $DotnetPackagePath = Join-Path -Path $InstallRoot -ChildPath $RelativePathToPackage | Join-Path -ChildPath $SpecificVersion
     Say-Verbose "Is-Dotnet-Package-Installed: Path to a package: $DotnetPackagePath"
     return Test-Path $DotnetPackagePath -PathType Container
@@ -244,13 +244,13 @@ function Get-Path-Prefix-With-Version($path) {
     if ($match.Success) {
         return $entry.FullName.Substring(0, $match.Index + $match.Length)
     }
-    
+
     return $null
 }
 
 function Get-List-Of-Directories-And-Versions-To-Unpack-From-Dotnet-Package([System.IO.Compression.ZipArchive]$Zip, [string]$OutPath) {
     Say-Invocation $MyInvocation
-    
+
     $ret = @()
     foreach ($entry in $Zip.Entries) {
         $dir = Get-Path-Prefix-With-Version $entry.FullName
@@ -261,12 +261,12 @@ function Get-List-Of-Directories-And-Versions-To-Unpack-From-Dotnet-Package([Sys
             }
         }
     }
-    
+
     $ret = $ret | Sort-Object | Get-Unique
-    
+
     $values = ($ret | foreach { "$_" }) -join ";"
     Say-Verbose "Directories to unpack: $values"
-    
+
     return $ret
 }
 
@@ -290,9 +290,9 @@ function Extract-Dotnet-Package([string]$ZipPath, [string]$OutPath) {
     Set-Variable -Name Zip
     try {
         $Zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
-        
+
         $DirectoriesToUnpack = Get-List-Of-Directories-And-Versions-To-Unpack-From-Dotnet-Package -Zip $Zip -OutPath $OutPath
-        
+
         foreach ($entry in $Zip.Entries) {
             $PathWithVersion = Get-Path-Prefix-With-Version $entry.FullName
             if (($PathWithVersion -eq $null) -Or ($DirectoriesToUnpack -contains $PathWithVersion)) {
