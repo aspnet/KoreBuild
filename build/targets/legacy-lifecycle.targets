@@ -2,7 +2,7 @@
   <Target Name="Build">
     <PropertyGroup>
       <ShadeDirectory>$(MSBuildThisFileDirectory)../shade/</ShadeDirectory>
-      <SakeExecutable>$(NuGetPackageRoot)sake/$(SakeVersion)/tools/Sake.exe</SakeExecutable>
+      <SakeExecutable>$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)'))sake/$(SakeVersion)/tools/Sake.exe</SakeExecutable>
       <SakeExecutable Condition="'$(OS)'!='Windows_NT'">mono $(SakeExecutable)</SakeExecutable>
       <MakeFilePath>$(ShadeDirectory)makefile.shade</MakeFilePath>
       <MakeFilePath Condition="Exists('$(RepositoryRoot)makefile.shade')">$(RepositoryRoot)makefile.shade</MakeFilePath>
