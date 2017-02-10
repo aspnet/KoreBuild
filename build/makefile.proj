@@ -13,11 +13,12 @@
     <PackageReference Include="Sake" Version="$(SakeVersion)" />
   </ItemGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)\targets\common.props" />
+  <PropertyGroup>
+    <!-- Extend the restore step to include multiple projects. See NuGet.targets in the MSBuild folder for more details. -->
+    <RestoreGraphProjectInput>$(MSBuildProjectFullPath);$(MSBuildThisFileDirectory)shared\sharedsources.csproj</RestoreGraphProjectInput>
+  </PropertyGroup>
 
-  <ItemGroup>
-    <Solutions Include="$(RepositoryRoot)\*.sln" />
-  </ItemGroup>
+  <Import Project="$(MSBuildThisFileDirectory)\targets\common.props" />
 
   <!-- import Microsoft.Common targets which will import NuGet-->
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
@@ -29,6 +30,11 @@
   </PropertyGroup>
 
   <Import Project="$(RepositoryRoot)build\repo.props" Condition="Exists('$(RepositoryRoot)build\repo.props')" />
+
+  <ItemGroup>
+    <Solutions Condition="'$(Solutions)'==''"
+      Include="$(RepositoryRoot)\*.sln" />
+  </ItemGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\targets\legacy-lifecycle.targets" Condition="'$(LifecycleType)'=='Legacy'" />
   <Import Project="$(MSBuildThisFileDirectory)\targets\standard-lifecycle.targets" Condition="'$(LifecycleType)'=='Standard'" />

@@ -1,57 +1,158 @@
 <Project>
 
-  <PropertyGroup>
-    <NuGetVerifierRuleFile>$(RepositoryRoot)NuGetPackageVerifier.json</NuGetVerifierRuleFile>
-  </PropertyGroup>
+<!--
+###################################################################
+Standard lifecycle targets.
 
-  <!-- default targets -->
-  <Target Name="Build" DependsOnTargets="Clean;Restore;Compile;Package;Test;Verify" />
+When extending the solution build, chain off one of these
+###################################################################
+-->
 
-  <Target Name="Clean">
-    <RemoveDir Directories="$(BuildDir)" />
-    <MSBuild Targets="Clean"
-              Projects="@(Solutions)"
-              Properties="Configuration=$(Configuration)" />
-  </Target>
+  <Target Name="Clean" DependsOnTargets="CleanArtifacts;CleanSolutions"/>
 
-  <Target Name="Restore">
-    <MSBuild Targets="Restore"
-             Projects="@(Solutions)"
-             Properties="Configuration=$(Configuration)" />
-  </Target>
+  <Target Name="Restore" DependsOnTargets="RestoreSolutions" />
 
-  <Target Name="Compile">
-    <MSBuild Targets="Build"
-             Projects="@(Solutions)"
-             Properties="Configuration=$(Configuration)" />
-  </Target>
+  <Target Name="Compile" DependsOnTargets="BuildSolutions" />
 
-  <Target Name="Package">
-    <!-- TODO consider using GeneratePackageOnBuild or calling Pack on the solution. Requires setting IsPackable=false on test and samples -->
-    <ItemGroup>
-      <ProjectsToPack Include="$(RepositoryRoot)src\*\*.csproj" />
-    </ItemGroup>
-    <MSBuild Targets="Pack"
-             Projects="@(ProjectsToPack)"
-             Properties="Configuration=$(Configuration);PackageOutputPath=$(BuildDir)" />
-  </Target>
+  <Target Name="Package" DependsOnTargets="PackageProjects;PackSharedSources" />
 
-  <!-- TODO -->
   <Target Name="Test" />
 
   <Target Name="Verify" DependsOnTargets="VerifyPackages" />
+
+  <Target Name="Build" DependsOnTargets="Clean;Restore;Compile;Package;Test;Verify" />
+
+<!--
+###################################################################
+Convenience targets.
+
+These are not part of the standard lifecycle but are useful
+###################################################################
+-->
+
+  <Target Name="Rebuild" DependsOnTargets="RebuildSolutions" />
+
+  <!-- TODO implement. See https://github.com/aspnet/BuildTools/issues/162 -->
+  <Target Name="Resx" />
+
+<!--
+###################################################################
+Individual build steps.
+
+Repos that customize the build should not rely on these existing
+as they are subject to change.
+###################################################################
+-->
+
+  <Target Name="CleanArtifacts">
+    <!-- intentionally BuildDir, not ArtifactDir -->
+    <RemoveDir Directories="$(BuildDir)" />
+  </Target>
+
+<!--
+###################################################################
+Targets: {Target}Solutions
+
+Items: Solutions
+
+Executes /t:{Target} on all solutions
+###################################################################
+-->
+  <Target Name="CleanSolutions">
+    <MSBuild Targets="Clean"
+      Projects="@(Solutions)"
+      Properties="Configuration=$(Configuration)" />
+  </Target>
+
+  <Target Name="RestoreSolutions">
+    <MSBuild Targets="Restore"
+      Projects="@(Solutions)"
+      Properties="Configuration=$(Configuration)" />
+  </Target>
+
+  <Target Name="BuildSolutions">
+    <MSBuild Targets="Build"
+      Projects="@(Solutions)"
+      Properties="Configuration=$(Configuration)" />
+  </Target>
+
+  <Target Name="RebuildSolutions">
+    <MSBuild Targets="Rebuild"
+      Projects="@(Solutions)"
+      Properties="Configuration=$(Configuration)" />
+  </Target>
+
+<!--
+###################################################################
+Target: PackageProjects
+
+Executes /t:Pack on all projects matching src/*/*.csproj.
+###################################################################
+-->
+  <Target Name="PackageProjects">
+    <!-- TODO consider using GeneratePackageOnBuild or calling Pack on the solution.
+        This would require setting IsPackable=false and samples and possible on tests (see https://github.com/NuGet/NuGet.Client/pull/1170) -->
+    <ItemGroup>
+      <ProjectsToPack Condition="'$(ProjectsToPack)' == ''" Include="$(RepositoryRoot)src\*\*.csproj" />
+    </ItemGroup>
+
+    <MSBuild Targets="Pack"
+      Projects="@(ProjectsToPack)"
+      Properties="Configuration=$(Configuration);PackageOutputPath=$(BuildDir);NoBuild=true" />
+  </Target>
+
+<!--
+###################################################################
+Target: PackSharedSources
+
+Creates a content files package for all each directory in
+that matches "$(RepositoryRoot)/shared/*.Sources".
+###################################################################
+-->
+  <PropertyGroup>
+    <SharedSourcesFolder>$(RepositoryRoot)shared/</SharedSourcesFolder>
+  </PropertyGroup>
+
+  <Target Name="PackSharedSources" Condition="Exists('$(SharedSourcesFolder)') OR '@(SharedSourceDirectories)' != ''">
+    <ItemGroup Condition="'@(SharedSourceDirectories)' == '' AND Exists('$(SharedSourcesFolder)')">
+      <SharedSourceDirectories Include="$([System.IO.Directory]::GetDirectories(&quot;$(SharedSourcesFolder)&quot;, '*.Sources'))" />
+    </ItemGroup>
+
+    <Message Importance="normal"
+      Text="Producing shared source package for %(SharedSourceDirectories.Identity)"
+      Condition="'@(SharedSourceDirectories)'!=''" />
+
+    <MSBuild Targets="Pack"
+      Projects="$(MSBuildThisFileDirectory)..\shared\sharedsources.csproj"
+      Properties="PackageOutputPath=$(BuildDir);RepositoryRoot=$(RepositoryRoot);NuspecBasePath=%(SharedSourceDirectories.Identity);PackageId=%(FileName)%(Extension)"
+      Condition="'@(SharedSourceDirectories)'!=''" />
+  </Target>
+
+<!--
+###################################################################
+Target: VerifyPackages
+
+Runs the NuGet Package Verifier on all nupkgs in build output.
+Only runs if a file named NuGetPackageVerifier.json is in the
+repository root.
+###################################################################
+-->
+  <PropertyGroup>
+    <NuGetVerifierRuleFile>$(RepositoryRoot)NuGetPackageVerifier.json</NuGetVerifierRuleFile>
+  </PropertyGroup>
 
   <Target Name="VerifyPackages">
     <ItemGroup>
       <Packages Include="$(BuildDir)*.nupkg" />
     </ItemGroup>
+
     <Warning Text="No nupkg found in '$(BuildDir)'." Condition="$(Packages -> Count()) == 0" />
     <Warning Text="Skipping nuget package verification because artifacts directory could not be found"
-             Condition="!Exists('$(BuildDir)')" />
+      Condition="!Exists('$(BuildDir)')" />
 
     <VerifyPackages ArtifactDirectory="$(BuildDir)"
-                    RuleFile="$(NuGetVerifierRuleFile)"
-                    Condition="Exists('$(NuGetVerifierRuleFile)') AND Exists('$(BuildDir)')" />
+      RuleFile="$(NuGetVerifierRuleFile)"
+      Condition="Exists('$(NuGetVerifierRuleFile)') AND Exists('$(BuildDir)')" />
   </Target>
 
 </Project>
