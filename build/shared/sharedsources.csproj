@@ -28,7 +28,7 @@
   <ItemGroup Condition="'$(NuspecBasePath)'!=''">
     <Compile Include="$(NuspecBasePath)\**\*.cs">
       <Pack>true</Pack>
-      <PackagePath>$(ContentTargetFolders)\cs\any\</PackagePath>
+      <PackagePath>$(ContentTargetFolders)\cs\netstandard1.0\</PackagePath>
     </Compile>
     <EmbeddedResource Include="$(NuspecBasePath)\**\*.resx">
       <Pack>true</Pack>
