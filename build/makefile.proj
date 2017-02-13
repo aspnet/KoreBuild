@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Internal.AspNetCore.BuildTools.Tasks" Version="1.0.0-*" />
     <PackageReference Include="NETFrameworkReferenceAssemblies" Version="$(NetFxVersion)" Condition="'$(NetFxVersion)'!=''" />
     <PackageReference Include="NuGetPackageVerifier" Version="1.0.2-*"/>
     <PackageReference Include="Sake" Version="$(SakeVersion)" />
