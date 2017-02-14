@@ -37,6 +37,20 @@ else
 fi
 versionFile="$koreBuildFolder/$versionFileName"
 version=$(<$versionFile)
+sharedRuntimeVersionFile="$koreBuildFolder/shared-runtime.version"
+sharedRuntimeVersion=$(<$sharedRuntimeVersionFile)
+
+install_shared_runtime() {
+    eval $invocation
+
+    local version=$1
+    local channel=$2
+
+    local sharedRuntimePath="$DOTNET_INSTALL_DIR/shared/Microsoft.NETCore.App/$version"
+    if [ ! -d "$sharedRuntimePath" ]; then
+        $koreBuildFolder/dotnet/dotnet-install.sh --shared-runtime --channel $channel --version $version
+    fi
+}
 
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=preview
 [ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
@@ -56,6 +70,8 @@ else
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
     $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
+
+    install_shared_runtime $sharedRuntimeVersion $KOREBUILD_DOTNET_CHANNEL
 
     # Add .NET installation directory to the path if it isn't yet included.
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"
