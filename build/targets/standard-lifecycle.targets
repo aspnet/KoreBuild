@@ -1,5 +1,7 @@
 <Project>
 
+  <Import Project="DefaultItems.targets" />
+
 <!--
 ###################################################################
 Standard lifecycle targets.
@@ -67,32 +69,27 @@ Executes /t:{Target} on all solutions
     <BuildInParallel>true</BuildInParallel>
   </PropertyGroup>
 
-  <Target Name="_GetSolutions">
-    <ItemGroup>
-      <Solutions Include="$(RepositoryRoot)\*.sln" />
-      <Solutions Remove="@(ExcludeSolutions)" />
-    </ItemGroup>
-
+  <Target Name="_ResolveSolutions">
     <RemoveDuplicates Inputs="@(Solutions)">
       <Output TaskParameter="Filtered" ItemName="_SolutionItems" />
     </RemoveDuplicates>
 
-    <Error Text="No solutions found to build" Conditio="'@(_SolutionItems)' == ''" />
+    <Error Text="No solutions found to build" Condition="'@(_SolutionItems)' == ''" />
   </Target>
 
-  <Target Name="CleanSolutions" DependsOnTargets="_GetSolutions">
+  <Target Name="CleanSolutions" DependsOnTargets="_ResolveSolutions">
     <MSBuild Targets="Clean"
       Projects="@(_SolutionItems)"
       Properties="Configuration=$(Configuration)" />
   </Target>
 
-  <Target Name="RestoreSolutions" DependsOnTargets="_GetSolutions">
+  <Target Name="RestoreSolutions" DependsOnTargets="_ResolveSolutions">
     <MSBuild Targets="Restore"
       Projects="@(_SolutionItems)"
       Properties="Configuration=$(Configuration)" />
   </Target>
 
-  <Target Name="BuildSolutions" DependsOnTargets="_GetSolutions">
+  <Target Name="BuildSolutions" DependsOnTargets="_ResolveSolutions">
     <MSBuild Targets="Build"
       Projects="@(_SolutionItems)"
       Properties="Configuration=$(Configuration)"
@@ -104,7 +101,7 @@ Executes /t:{Target} on all solutions
     </PropertyGroup>
   </Target>
 
-  <Target Name="RebuildSolutions" DependsOnTargets="_GetSolutions">
+  <Target Name="RebuildSolutions" DependsOnTargets="_ResolveSolutions">
     <MSBuild Targets="Rebuild"
       Projects="@(_SolutionItems)"
       Properties="Configuration=$(Configuration)"
@@ -125,11 +122,6 @@ Executes /t:Pack on all projects matching src/*/*.csproj.
   <Target Name="PackageProjects">
     <!-- TODO consider using GeneratePackageOnBuild or calling Pack on the solution.
         This would require setting IsPackable=false and samples and possible on tests (see https://github.com/NuGet/NuGet.Client/pull/1170) -->
-    <ItemGroup>
-      <ProjectsToPack Include="$(RepositoryRoot)src\*\*.csproj" />
-      <ProjectsToPack Remove="@(ExcludeFromPack)" />
-    </ItemGroup>
-
     <RemoveDuplicates Inputs="@(ProjectsToPack)">
       <Output TaskParameter="Filtered" ItemName="_PackProjectItems" />
     </RemoveDuplicates>
@@ -156,16 +148,7 @@ Creates a content files package for all each directory in
 that matches "$(RepositoryRoot)/shared/*.Sources".
 ###################################################################
 -->
-  <PropertyGroup>
-    <SharedSourcesFolder>$(RepositoryRoot)shared/</SharedSourcesFolder>
-  </PropertyGroup>
-
   <Target Name="PackSharedSources" Condition="Exists('$(SharedSourcesFolder)') OR '@(SharedSourceDirectories)' != ''">
-    <ItemGroup>
-      <SharedSourceDirectories Include="$([System.IO.Directory]::GetDirectories(&quot;$(SharedSourcesFolder)&quot;, '*.Sources'))" Condition="Exists('$(SharedSourcesFolder)')" />
-      <SharedSourceDirectories Remove="@(ExcludeSharedSourceDirectories)" />
-    </ItemGroup>
-
     <RemoveDuplicates Inputs="@(SharedSourceDirectories)">
       <Output TaskParameter="Filtered" ItemName="_SharedSourceItems" />
     </RemoveDuplicates>
@@ -200,16 +183,6 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
   </PropertyGroup>
 
   <Target Name="TestProjects">
-
-    <ItemGroup>
-      <!-- put unit test projects ahead of functional tests -->
-      <ProjectsToTest Include="$(RepositoryRoot)test\*\*.Tests.csproj" />
-      <ProjectsToTest Include="$(RepositoryRoot)test\*\*.Test.csproj" />
-      <ProjectsToTest Include="$(RepositoryRoot)test\*\*.csproj" />
-      <ProjectsToTest Remove="@(ProjectsToTest)" Condition="Exists('%(RootDir)%(Directory).notest')" />
-      <ProjectsToTest Remove="@(ExcludeFromTest)" />
-    </ItemGroup>
-
     <RemoveDuplicates Inputs="@(ProjectsToTest)">
       <Output TaskParameter="Filtered" ItemName="_TestProjectItems" />
     </RemoveDuplicates>
