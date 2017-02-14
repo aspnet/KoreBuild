@@ -97,7 +97,11 @@ $sharedPath = (Join-Path (Split-Path ((get-command dotnet.exe).Path) -Parent) "s
 
 # We still nuget because dotnet doesn't have support for pushing packages
 # TODO remove. dotnet nuget push now exists
-Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/v4.0.0-rc4/NuGet.exe" -OutFile "$koreBuildFolder/nuget.exe"
+$nugetExePath = Join-Path $koreBuildFolder 'nuget.exe'
+if (!(Test-Path $nugetExePath))
+{
+    Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/v4.0.0-rc4/NuGet.exe" -OutFile "$koreBuildFolder/nuget.exe"
+}
 
 $env:KOREBUILD_FOLDER=$koreBuildFolder
 $makeFileProj = "$koreBuildFolder/makefile.proj"
