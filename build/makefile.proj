@@ -5,6 +5,14 @@
     <!-- TFM used only for the purpose of restoring build tools. It does not affect the TFM of projects -->
     <TargetFramework>netcoreapp1.0</TargetFramework>
     <SakeVersion>0.2.2</SakeVersion>
+
+    <!--
+      We want to ensure these properties do not flow into sub-builds.
+      This group of properties should be specified in RemoveProperties when an MSBuild task is used.
+      These properties include those that could interfere with inner builds
+      or could result in an unnecessary build cache miss.
+    -->
+    <_BuildPropertiesToRemove>$(_BuildPropertiesToRemove);TargetFramework;TargetFrameworks;LifecycleType;RestoreGraphProjectInput;_InvalidConfigurationWarn;_InvalidConfigurationError</_BuildPropertiesToRemove>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,11 +39,6 @@
   </PropertyGroup>
 
   <Import Project="$(RepositoryRoot)build\repo.props" Condition="Exists('$(RepositoryRoot)build\repo.props')" />
-
-  <ItemGroup>
-    <Solutions Condition="'$(Solutions)'==''"
-      Include="$(RepositoryRoot)\*.sln" />
-  </ItemGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\targets\legacy-lifecycle.targets" Condition="'$(LifecycleType)'=='Legacy'" />
   <Import Project="$(MSBuildThisFileDirectory)\targets\standard-lifecycle.targets" Condition="'$(LifecycleType)'=='Standard'" />

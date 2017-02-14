@@ -16,7 +16,7 @@ When extending the solution build, chain off one of these
 
   <Target Name="Package" DependsOnTargets="PackageProjects;PackSharedSources" />
 
-  <Target Name="Test" />
+  <Target Name="Test" DependsOnTargets="TestProjects" />
 
   <Target Name="Verify" DependsOnTargets="VerifyPackages" />
 
@@ -54,32 +54,65 @@ as they are subject to change.
 Targets: {Target}Solutions
 
 Items: Solutions
+Properties: ExcludeSolutions
 
 Executes /t:{Target} on all solutions
 ###################################################################
 -->
-  <Target Name="CleanSolutions">
+  <PropertyGroup>
+    <_SolutionWasBuilt>false</_SolutionWasBuilt>
+    <!-- ensure its value doesn't invalidate MSBuild build cache -->
+    <_BuildPropertiesToRemove>$(_BuildPropertiesToRemove);_SolutionWasBuilt</_BuildPropertiesToRemove>
+
+    <BuildInParallel>true</BuildInParallel>
+  </PropertyGroup>
+
+  <Target Name="_GetSolutions">
+    <ItemGroup>
+      <Solutions Include="$(RepositoryRoot)\*.sln" />
+      <Solutions Remove="@(ExcludeSolutions)" />
+    </ItemGroup>
+
+    <RemoveDuplicates Inputs="@(Solutions)">
+      <Output TaskParameter="Filtered" ItemName="_SolutionItems" />
+    </RemoveDuplicates>
+
+    <Error Text="No solutions found to build" Conditio="'@(_SolutionItems)' == ''" />
+  </Target>
+
+  <Target Name="CleanSolutions" DependsOnTargets="_GetSolutions">
     <MSBuild Targets="Clean"
-      Projects="@(Solutions)"
+      Projects="@(_SolutionItems)"
       Properties="Configuration=$(Configuration)" />
   </Target>
 
-  <Target Name="RestoreSolutions">
+  <Target Name="RestoreSolutions" DependsOnTargets="_GetSolutions">
     <MSBuild Targets="Restore"
-      Projects="@(Solutions)"
+      Projects="@(_SolutionItems)"
       Properties="Configuration=$(Configuration)" />
   </Target>
 
-  <Target Name="BuildSolutions">
+  <Target Name="BuildSolutions" DependsOnTargets="_GetSolutions">
     <MSBuild Targets="Build"
-      Projects="@(Solutions)"
-      Properties="Configuration=$(Configuration)" />
+      Projects="@(_SolutionItems)"
+      Properties="Configuration=$(Configuration)"
+      BuildInParallel="$(BuildInParallel)"
+      RemoveProperties="$(_BuildPropertiesToRemove)" />
+
+    <PropertyGroup>
+      <_SolutionWasBuilt>true</_SolutionWasBuilt>
+    </PropertyGroup>
   </Target>
 
-  <Target Name="RebuildSolutions">
+  <Target Name="RebuildSolutions" DependsOnTargets="_GetSolutions">
     <MSBuild Targets="Rebuild"
-      Projects="@(Solutions)"
-      Properties="Configuration=$(Configuration)" />
+      Projects="@(_SolutionItems)"
+      Properties="Configuration=$(Configuration)"
+      RemoveProperties="$(_BuildPropertiesToRemove)" />
+
+    <PropertyGroup>
+      <_SolutionWasBuilt>true</_SolutionWasBuilt>
+    </PropertyGroup>
   </Target>
 
 <!--
@@ -93,12 +126,26 @@ Executes /t:Pack on all projects matching src/*/*.csproj.
     <!-- TODO consider using GeneratePackageOnBuild or calling Pack on the solution.
         This would require setting IsPackable=false and samples and possible on tests (see https://github.com/NuGet/NuGet.Client/pull/1170) -->
     <ItemGroup>
-      <ProjectsToPack Condition="'$(ProjectsToPack)' == ''" Include="$(RepositoryRoot)src\*\*.csproj" />
+      <ProjectsToPack Include="$(RepositoryRoot)src\*\*.csproj" />
+      <ProjectsToPack Remove="@(ExcludeFromPack)" />
     </ItemGroup>
 
+    <RemoveDuplicates Inputs="@(ProjectsToPack)">
+      <Output TaskParameter="Filtered" ItemName="_PackProjectItems" />
+    </RemoveDuplicates>
+
+    <PropertyGroup>
+      <!-- TODO remove when we stop using Sake. Because Sake invokes the project multiple times, so this value is always false -->
+      <!--<PackageNoBuild Condition="'$(PackageNoBuild)' == ''">$(_SolutionWasBuilt)</PackageNoBuild>-->
+      <PackageNoBuild>true</PackageNoBuild>
+    </PropertyGroup>
+
     <MSBuild Targets="Pack"
-      Projects="@(ProjectsToPack)"
-      Properties="Configuration=$(Configuration);PackageOutputPath=$(BuildDir);NoBuild=true" />
+      Projects="@(_PackProjectItems)"
+      Condition="'@(_PackProjectItems)' != ''"
+      Properties="Configuration=$(Configuration);PackageOutputPath=$(BuildDir);NoBuild=$(PackageNoBuild)"
+      BuildInParallel="$(BuildInParallel)"
+      RemoveProperties="$(_BuildPropertiesToRemove);PackageNoBuild" />
   </Target>
 
 <!--
@@ -114,18 +161,75 @@ that matches "$(RepositoryRoot)/shared/*.Sources".
   </PropertyGroup>
 
   <Target Name="PackSharedSources" Condition="Exists('$(SharedSourcesFolder)') OR '@(SharedSourceDirectories)' != ''">
-    <ItemGroup Condition="'@(SharedSourceDirectories)' == '' AND Exists('$(SharedSourcesFolder)')">
-      <SharedSourceDirectories Include="$([System.IO.Directory]::GetDirectories(&quot;$(SharedSourcesFolder)&quot;, '*.Sources'))" />
+    <ItemGroup>
+      <SharedSourceDirectories Include="$([System.IO.Directory]::GetDirectories(&quot;$(SharedSourcesFolder)&quot;, '*.Sources'))" Condition="Exists('$(SharedSourcesFolder)')" />
+      <SharedSourceDirectories Remove="@(ExcludeSharedSourceDirectories)" />
     </ItemGroup>
 
+    <RemoveDuplicates Inputs="@(SharedSourceDirectories)">
+      <Output TaskParameter="Filtered" ItemName="_SharedSourceItems" />
+    </RemoveDuplicates>
+
     <Message Importance="normal"
-      Text="Producing shared source package for %(SharedSourceDirectories.Identity)"
-      Condition="'@(SharedSourceDirectories)'!=''" />
+      Text="Producing shared source package for %(_SharedSourceItems.Identity)"
+      Condition="'@(_SharedSourceItems)' != ''" />
 
     <MSBuild Targets="Pack"
       Projects="$(MSBuildThisFileDirectory)..\shared\sharedsources.csproj"
-      Properties="PackageOutputPath=$(BuildDir);RepositoryRoot=$(RepositoryRoot);NuspecBasePath=%(SharedSourceDirectories.Identity);PackageId=%(FileName)%(Extension)"
-      Condition="'@(SharedSourceDirectories)'!=''" />
+      Properties="PackageOutputPath=$(BuildDir);RepositoryRoot=$(RepositoryRoot);NuspecBasePath=%(_SharedSourceItems.Identity);PackageId=%(FileName)%(Extension)"
+      Condition="'@(_SharedSourceItems)' != ''"
+      BuildInParallel="$(BuildInParallel)" />
+  </Target>
+
+<!--
+###################################################################
+Target: TestProjects
+
+Items: ProjectsToTest. Defaults to test/*/*.csproj
+Properties: ExcludeFromTest. ItemSpec for projects to avoid testing.
+
+Runs the VSTest on all projects in the ProjectsToTest itemgroup.
+###################################################################
+-->
+
+  <PropertyGroup>
+    <!-- TODO if VS Test doesn't make minimal output the default log setting, we can set that here. cref https://github.com/Microsoft/vstest/issues/301 -->
+    <VSTestLogger Condition=" '$(VSTestLogger)' == '' AND '$(TEAMCITY_VERSION)' != '' ">trx</VSTestLogger>
+    <IgnoreFailingTestProjects>false</IgnoreFailingTestProjects>
+    <IgnoreFailingTestProjects Condition="'$(KOREBUILD_IGNORE_DOTNET_TEST_EXIT_CODE)' == '1'">true</IgnoreFailingTestProjects>
+  </PropertyGroup>
+
+  <Target Name="TestProjects">
+
+    <ItemGroup>
+      <!-- put unit test projects ahead of functional tests -->
+      <ProjectsToTest Include="$(RepositoryRoot)test\*\*.Tests.csproj" />
+      <ProjectsToTest Include="$(RepositoryRoot)test\*\*.Test.csproj" />
+      <ProjectsToTest Include="$(RepositoryRoot)test\*\*.csproj" />
+      <ProjectsToTest Remove="@(ProjectsToTest)" Condition="Exists('%(RootDir)%(Directory).notest')" />
+      <ProjectsToTest Remove="@(ExcludeFromTest)" />
+    </ItemGroup>
+
+    <RemoveDuplicates Inputs="@(ProjectsToTest)">
+      <Output TaskParameter="Filtered" ItemName="_TestProjectItems" />
+    </RemoveDuplicates>
+
+    <Message Text="Running tests for:%0A@(_TestProjectItems -> '%(FileName)','%0A')" Importance="High" />
+
+    <PropertyGroup>
+      <VSTestNoBuild Condition="'$(VSTestNoBuild)' == ''">$(_SolutionWasBuilt)</VSTestNoBuild>
+      <_TestContinueOnError Condition="'$(IgnoreFailingTestProjects)' == 'true'">ErrorAndContinue</_TestContinueOnError>
+      <_TestContinueOnError Condition="'$(IgnoreFailingTestProjects)' != 'true'">ErrorAndStop</_TestContinueOnError>
+    </PropertyGroup>
+
+    <!-- Intentional use of batching ('%') instead of passing items ('@') so that tests fail sooner -->
+    <MSBuild Projects="%(_TestProjectItems.Identity)"
+      Targets="VSTest"
+      Properties="Configurationf=$(Configuration);VSTestLogger=$(VSTestLogger);VSTestNoBuild=$(VSTestNoBuild)"
+      Condition="'@(_TestProjectItems)' != ''"
+      ContinueOnError="$(_TestContinueOnError)"
+      RemoveProperties="$(_BuildPropertiesToRemove);_TestContinueOnError" />
+
   </Target>
 
 <!--

@@ -178,68 +178,10 @@ functions
     nuget-resilient-publish sourcePackagesDir='${BUILD_DIR}' nugetFeed='${E("NUGET_PUBLISH_FEED")}' if='!string.IsNullOrEmpty(E("NUGET_PUBLISH_FEED"))'
   -}
 
-#xunit-test target='test' if='Directory.Exists("test")'
+#xunit-test target='test'
   @{
-    var projectFiles = Files.Include(TEST_PROJECT_GLOB);
-    foreach (var projectFile in projectFiles)
-    {
-        var dir = Path.GetDirectoryName(projectFile);
-        if (File.Exists(Path.Combine(dir, ".notest")))
-        {
-            continue;
-        }
-
-        var options = E("KOREBUILD_DOTNET_TEST_OPTIONS");
-        if (IsTeamCity)
-        {
-            // TODO put all trx files in same folder. See https://github.com/Microsoft/vstest/issues/243
-            // TODO or use TC logger https://github.com/Microsoft/vstest/issues/254
-            options += " --logger:trx ";
-        }
-        // workaround for https://github.com/Microsoft/vstest/issues/283
-        var txt = File.ReadAllText(projectFile);
-        var multiTfm = Regex.Match(txt, @"\<TargetFrameworks\>(.+)\<\/TargetFrameworks\>");
-        var singleTfm = Regex.Match(txt, @"\<TargetFramework\>(.+)\<\/TargetFramework\>");
-        if (multiTfm != null && multiTfm.Success)
-        {
-          var frameworks = multiTfm.Groups[1]
-            .Value
-            .Split(new string[] {";"}, StringSplitOptions.RemoveEmptyEntries)
-            .Select(s => s.Trim())
-            .ToArray();
-
-          foreach (var framework in frameworks)
-          {
-            if (IsLinux && framework != null && framework.StartsWith("net4"))
-            {
-              Log.Info("Skipping tests for TFM " + framework + " on this platform");
-              continue;
-            }
-
-            DotnetTest(projectFile, Configuration, options, framework);
-          }
-          // end workaround
-        }
-        else if(singleTfm != null && singleTfm.Success)
-        {
-          var framework = singleTfm.Groups[1].Value;
-          if (IsLinux && framework != null && framework.StartsWith("net4"))
-          {
-            Log.Info("Skipping tests for TFM " + framework + " on this platform");
-          }
-          else
-          {
-            DotnetTest(projectFile, Configuration, options, framework);
-          }
-        }
-        else
-        {
-          // default invocation
-          DotnetTest(projectFile, Configuration, options);
-        }
-    }
+    MSBuild("/t:Test");
   }
-
 
 #make-roslyn-fast
   ngen-roslyn
@@ -403,12 +345,6 @@ macro name="DotnetPack" projectFile='string' dotnetPackOutputDir='string' config
 
 macro name="DotnetPublish" projectFile='string' outputFolder='string' framework='string' configuration='string'
     dotnet-publish
-
-macro name="DotnetTest" projectFile='string' configuration='string' test_options='string'
-    dotnet-test
-
-macro name="DotnetTest" projectFile='string' configuration='string' test_options='string' framework='string'
-    dotnet-test
 
 macro name='Npm' npmCommand='string' npmDir='string'
     npm
