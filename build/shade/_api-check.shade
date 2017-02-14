@@ -124,6 +124,7 @@ functions @{
             else if (apiListing == null)
             {
                 Log.Info("API listing not found for: " + dll.FullName);
+                Log.Info("To learn more about generating baselines go to: https://github.com/aspnet/BuildTools/wiki/Api-Check");
             }
             else
             {

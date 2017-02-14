@@ -29,15 +29,6 @@ $dotnetChannel = "rel-1.0.0"
 $dotnetVersion = Get-Content $dotnetVersionFile
 $sharedRuntimeVersion = Get-Content (Join-Path $koreBuildFolder 'shared-runtime.version')
 
-if ($env:KOREBUILD_DOTNET_CHANNEL)
-{
-    $dotnetChannel = $env:KOREBUILD_DOTNET_CHANNEL
-}
-if ($env:KOREBUILD_DOTNET_VERSION)
-{
-    $dotnetVersion = $env:KOREBUILD_DOTNET_VERSION
-}
-
 $dotnetLocalInstallFolder = $env:DOTNET_INSTALL_DIR
 if (!$dotnetLocalInstallFolder)
 {
