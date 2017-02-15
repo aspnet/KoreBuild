@@ -16,7 +16,7 @@ $dotnetVersionFile = $koreBuildFolder + "\cli.version"
 $dotnetChannel = "preview"
 $dotnetVersion = Get-Content $dotnetVersionFile
 $dotnetSharedRuntimeVersion = Get-Content (Join-Path $koreBuildFolder 'shared-runtime.version')
-$dotnetSharedRuntimeChannel = "preview"
+$dotnetSharedRuntimeChannel = "fts"
 
 if ($env:KOREBUILD_DOTNET_CHANNEL) 
 {

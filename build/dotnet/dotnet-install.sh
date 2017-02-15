@@ -323,12 +323,16 @@ get_azure_channel_from_channel() {
             echo "preview"
             return 0
             ;;
+        fts)
+            echo "release/1.1.0"
+            return 0
+            ;;
         production)
             say_err "Production channel does not exist yet"
             return 1
     esac
     
-    say_err "``$1`` is an invalid channel name. Use one of the following: ``future``, ``preview``, ``production``"
+    say_err "``$1`` is an invalid channel name. Use one of the following: ``future``, ``preview``, ``fts``, ``production``"
     return 1
 }
 
