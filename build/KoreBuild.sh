@@ -89,7 +89,6 @@ else
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
     $koreBuildFolder/dotnet/dotnet-install.sh --channel rel-1.0.0 --version $version
-    install_shared_runtime '1.0.0' 'preview'
     install_shared_runtime $sharedRuntimeVersion 'master'
     if [ ! -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION" ]; then
         channel="$KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL"
