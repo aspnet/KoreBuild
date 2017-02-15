@@ -32,11 +32,13 @@ koreBuildFolder="${koreBuildFolder#/}"
 
 versionFile="$koreBuildFolder/cli.version"
 version=$(<$versionFile)
+sharedRuntimeVersionFile="$koreBuildFolder/shared-runtime.version"
+sharedRuntimeVersion=$(<$sharedRuntimeVersionFile)
 
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=preview
 [ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
-[ -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION" ] && KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION=1.0.0
-[ -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL" ] && KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL=preview
+[ -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION" ] && KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION=$sharedRuntimeVersion
+[ -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL" ] && KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL=fts
 
 if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
     echo "Skipping runtime installation because KOREBUILD_SKIP_RUNTIME_INSTALL is set"

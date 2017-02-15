@@ -14,6 +14,7 @@
     Channel is the way of reasoning about stability and quality of dotnet. This parameter takes one of the values:
     - future - Possibly unstable, frequently changing, may contain new finished and unfinished features
     - preview - Pre-release stable with known issues and feature gaps
+    - fts - 1.1.x patch releases
     - production - Most stable releases
 .PARAMETER Version
     Default: latest
@@ -149,8 +150,9 @@ function Get-Azure-Channel-From-Channel([string]$Channel) {
         { ($_ -eq "future") -or ($_ -eq "dev") } { return "dev" }
         { ($_ -eq "beta") } { return "beta" }
         { ($_ -eq "preview") } { return "preview" }
+        { ($_ -eq "fts") } { return "release/1.1.0" }
         { $_ -eq "production" } { throw "Production channel does not exist yet" }
-        default { throw "``$Channel`` is an invalid channel name. Use one of the following: ``future``, ``preview``, ``production``" }
+        default { throw "``$Channel`` is an invalid channel name. Use one of the following: ``future``, ``preview``, ``fts``, ``production``" }
     }
 }
 
