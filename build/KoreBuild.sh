@@ -62,6 +62,9 @@ version=$(<$versionFile)
 sharedRuntimeVersionFile="$koreBuildFolder/shared-runtime.version"
 sharedRuntimeVersion=$(<$sharedRuntimeVersionFile)
 
+[ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=rel-1.0.0
+[ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
+
 install_shared_runtime() {
     eval $invocation
 
@@ -88,13 +91,15 @@ else
     export KOREBUILD_FOLDER="$(dirname $koreBuildFolder)"
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
-    $koreBuildFolder/dotnet/dotnet-install.sh --channel rel-1.0.0 --version $version
-    install_shared_runtime $sharedRuntimeVersion 'master'
-    if [ ! -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION" ]; then
-        channel="$KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL"
-        [ -z "$channel" ] && channel="master"
-        install_shared_runtime $KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION $channel
-    fi
+    $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
+    # TODO restore installing pre-release versions of sharedfx when we upgrade to .NET Core 2.0
+    # install_shared_runtime $sharedRuntimeVersion 'master'
+
+    # if [ ! -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION" ]; then
+    #     channel="$KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL"
+    #     [ -z "$channel" ] && channel="master"
+    #     install_shared_runtime $KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION $channel
+    # fi
 
     # Add .NET installation directory to the path if it isn't yet included.
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"
