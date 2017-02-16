@@ -18,6 +18,7 @@
 
     <Exec
       Command="$(SakeExecutable) -I &quot;$(MSBuildThisFileDirectory)../shade&quot; -f $(MakeFilePath) $(SakeTargets)"
-      WorkingDirectory="$(RepositoryRoot)" />
+      WorkingDirectory="$(RepositoryRoot)"
+      IgnoreStandardErrorWarningFormat="true" />
   </Target>
 </Project>
