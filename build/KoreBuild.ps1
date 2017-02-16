@@ -51,9 +51,15 @@ if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 else
 {
     & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
-    # Avoid redownloading the CLI if it's already installed.
-    $sharedRuntimePath = [IO.Path]::Combine($dotnetLocalInstallFolder, 'shared', 'Microsoft.NETCore.App', $dotnetSharedRuntimeVersion)
-    if (!(Test-Path $sharedRuntimePath))
+    # Install the 1.0.0 runtime for ApiChecker.
+    $sharedRuntimePath100 = [IO.Path]::Combine($dotnetLocalInstallFolder, 'shared', 'Microsoft.NETCore.App', '1.0.0')
+    if (!(Test-Path $sharedRuntimePath100))
+    {
+        & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel preview -SharedRuntime -Version 1.0.0 -Architecture x64
+    }
+    # Install the FTS runtime.
+    $sharedRuntimePathFTS = [IO.Path]::Combine($dotnetLocalInstallFolder, 'shared', 'Microsoft.NETCore.App', $dotnetSharedRuntimeVersion)
+    if (!(Test-Path $sharedRuntimePathFTS))
     {
         & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetSharedRuntimeChannel -SharedRuntime -Version $dotnetSharedRuntimeVersion -Architecture x64
     }

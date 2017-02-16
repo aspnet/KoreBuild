@@ -55,8 +55,14 @@ else
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
     $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
-    sharedRuntimePath="$DOTNET_INSTALL_DIR/shared/Microsoft.NETCore.App/$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION"
-    if [ ! -d "$sharedRuntimePath" ]; then
+    # Install the 1.0.0 runtime for ApiChecker
+    sharedRuntimePath100="$DOTNET_INSTALL_DIR/shared/Microsoft.NETCore.App/1.0.0"
+    if [ ! -d "$sharedRuntimePath100" ]; then
+        $koreBuildFolder/dotnet/dotnet-install.sh --shared-runtime --channel preview --version 1.0.0
+    fi
+    #Install the FTS runtime
+    sharedRuntimePathFTS="$DOTNET_INSTALL_DIR/shared/Microsoft.NETCore.App/$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION"
+    if [ ! -d "$sharedRuntimePathFTS" ]; then
         $koreBuildFolder/dotnet/dotnet-install.sh --shared-runtime --channel $KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL --version $KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION
     fi
 
