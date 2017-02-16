@@ -5,20 +5,18 @@
 
   <!-- DisableDefaultItems only when you really want to control what is built and tested. Otherwise, use the Exclude* item groups -->
   <ItemGroup Condition="'$(DisableDefaultItems)' != 'true'">
-    <Solutions Include="$(RepositoryRoot)\*.sln" />
-    <Solutions Remove="@(ExcludeSolutions)" />
+    <Solutions Include="$(RepositoryRoot)\*.sln" Exclude="@(ExcludeSolutions)" />
 
-    <ProjectsToPack Include="$(RepositoryRoot)src\*\*.csproj" />
-    <ProjectsToPack Remove="@(ExcludeFromPack)" />
+    <ProjectsToPack Include="$(RepositoryRoot)src\*\*.csproj" Exclude="@(ExcludeFromPack)" />
 
-    <SharedSourceDirectories Include="$([System.IO.Directory]::GetDirectories(&quot;$(SharedSourcesFolder)&quot;, '*.Sources'))" Condition="Exists('$(SharedSourcesFolder)')" />
-    <SharedSourceDirectories Remove="@(ExcludeSharedSourceDirectories)" />
+    <SharedSourceDirectories Include="$([System.IO.Directory]::GetDirectories(&quot;$(SharedSourcesFolder)&quot;, '*.Sources'))"
+      Condition="Exists('$(SharedSourcesFolder)')"
+      Exclude="@(ExcludeSharedSourceDirectories)" />
 
     <!-- put unit test projects ahead of functional tests -->
-    <_FunctionalTests Include="$(RepositoryRoot)test\*\*FunctionalTest*.csproj" />
-    <ProjectsToTest Include="$(RepositoryRoot)test\*\*.csproj" Exclude="@(_FunctionalTests)" />
+    <_FunctionalTests Include="$(RepositoryRoot)test\*\*FunctionalTest*.csproj" Exclude="@(ExcludeFromTest)" />
+    <ProjectsToTest Include="$(RepositoryRoot)test\*\*.csproj" Exclude="@(_FunctionalTests);@(ExcludeFromTest)" />
     <ProjectsToTest Include="@(_FunctionalTests)"  />
-    <ProjectsToTest Remove="@(ExcludeFromTest)" />
   </ItemGroup>
 
 </Project>
