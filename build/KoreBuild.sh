@@ -67,12 +67,8 @@ else
     # Install the version of dotnet-cli used to compile
     $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
     install_shared_runtime '1.1.0' 'release/1.1.0'
-    install_shared_runtime $sharedRuntimeVersion 'master'
-    if [ ! -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION" ]; then
-        channel="$KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL"
-        [ -z "$channel" ] && channel="master"
-        install_shared_runtime $KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION $channel
-    fi
+    install_shared_runtime '1.1.1' 'release/1.1.0'
+    install_shared_runtime '1.0.4' 'preview'
 
     # Add .NET installation directory to the path if it isn't yet included.
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"

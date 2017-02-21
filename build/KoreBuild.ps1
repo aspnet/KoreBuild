@@ -54,9 +54,8 @@ else
     # Install the version of dotnet-cli used to compile
     & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
     InstallSharedRuntime '1.1.0' 'release/1.1.0'
-
-    $sharedRuntimeChannel='master'
-    InstallSharedRuntime $sharedRuntimeVersion $sharedRuntimeChannel
+    InstallSharedRuntime '1.1.1' 'release/1.1.0'
+    InstallSharedRuntime '1.0.4' 'preview'
 
     Write-Host ''
     Write-Host -ForegroundColor Cyan 'To run tests in Visual Studio, you may need to run this installer:'
