@@ -5,7 +5,7 @@
 
   <ItemGroup>
     <PackageReference Include="Sake" Version="0.2.2" />
-    <PackageReference Include="NuGetPackageVerifier" Version="1.0.2-*"/>
+    <PackageReference Include="NuGetPackageVerifier" Version="1.0.2-rc2-15156"/>
     <PackageReference Include="NETFrameworkReferenceAssemblies" Version="$(NetFxVersion)" Condition="'$(NetFxVersion)'!=''" />
   </ItemGroup>
 
