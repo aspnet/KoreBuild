@@ -12,7 +12,7 @@ When extending the solution build, chain off one of these
 
   <Target Name="Clean" DependsOnTargets="CleanArtifacts;CleanSolutions"/>
 
-  <Target Name="Restore" DependsOnTargets="RestoreSolutions" />
+  <Target Name="Initialize" DependsOnTargets="RestoreSolutions" />
 
   <Target Name="Compile" DependsOnTargets="BuildSolutions" />
 
@@ -22,7 +22,7 @@ When extending the solution build, chain off one of these
 
   <Target Name="Verify" DependsOnTargets="VerifyPackages" />
 
-  <Target Name="Build" DependsOnTargets="Clean;Restore;Compile;Package;Test;Verify" />
+  <Target Name="Build" DependsOnTargets="Clean;Initialize;Compile;Package;Test;Verify" />
 
 <!--
 ###################################################################
