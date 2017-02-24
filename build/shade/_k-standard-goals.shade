@@ -85,7 +85,7 @@ functions
 #repo-initialize target='initialize' if='!NoRestore'
   use-volatile-feed
   @{
-    MSBuild("/t:Restore");
+    MSBuild("/t:Initialize");
   }
 
 #target-dir-clean target='clean'
