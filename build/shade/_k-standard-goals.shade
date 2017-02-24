@@ -173,9 +173,6 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
     }
   }
 
-#run-api-check .build-compile target='compile' description='Checks the compiled assemblies against a baseline for potential breaking changes'
-  api-check
-
 #build-pack .build-compile target='compile'
   @{
     if (Directory.Exists("src"))
