@@ -5,7 +5,7 @@
 
   <!-- DisableDefaultItems only when you really want to control what is built and tested. Otherwise, use the Exclude* item groups -->
   <ItemGroup Condition="'$(DisableDefaultItems)' != 'true'">
-    <Solutions Include="$(RepositoryRoot)\*.sln" Exclude="@(ExcludeSolutions)" />
+    <Solutions Include="$(RepositoryRoot)*.sln" Exclude="@(ExcludeSolutions)" />
 
     <ProjectsToPack Include="$(RepositoryRoot)src\*\*.csproj" Exclude="@(ExcludeFromPack)" />
 
