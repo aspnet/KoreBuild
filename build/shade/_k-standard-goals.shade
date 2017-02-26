@@ -16,9 +16,9 @@ default BUILD_DIR='${Path.Combine(TARGET_DIR, "build")}'
 default TEST_DIR='${Path.Combine(TARGET_DIR, "test")}'
 default Configuration='${E("Configuration")}'
 default PACKAGELIST_JSON_FILENAME = 'NuGetPackageVerifier.json'
-default SRC_PROJECT_GLOB = "src/*/project.json"
-default TEST_PROJECT_GLOB = "test/*/project.json"
-default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
+default SRC_PROJECT_GLOB = "src/**/project.json"
+default TEST_PROJECT_GLOB = "test/**/project.json"
+default SAMPLES_PROJECT_GLOB = "samples/**/project.json"
 
 @{
   if (string.IsNullOrEmpty(E("DOTNET_BUILD_VERSION")))
@@ -109,7 +109,7 @@ default SAMPLES_PROJECT_GLOB = "samples/*/project.json"
     }
 
 #build-clean if='Directory.Exists("src")'
-  k-clean each='var projectFile in Files.Include("src/*/project.json")'
+  k-clean each='var projectFile in Files.Include(SRC_PROJECT_GLOB)'
 
 #ci-deep-clean .deep-clean target='clean' if='IsTeamCity'
 
