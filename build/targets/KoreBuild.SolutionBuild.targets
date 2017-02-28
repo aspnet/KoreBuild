@@ -1,28 +1,19 @@
 <Project>
 
-  <Import Project="DefaultItems.targets" />
+  <!-- packages required to implement the targets in this file-->
+  <ItemGroup>
+    <PackageReference Include="NuGetPackageVerifier" Version="1.0.2-*"/>
+  </ItemGroup>
 
-<!--
-###################################################################
-Standard lifecycle targets.
-
-When extending the solution build, chain off one of these
-###################################################################
--->
-
-  <Target Name="Clean" DependsOnTargets="CleanArtifacts;CleanSolutions"/>
-
-  <Target Name="Initialize" DependsOnTargets="RestoreSolutions" />
-
-  <Target Name="Compile" DependsOnTargets="BuildSolutions" />
-
-  <Target Name="Package" DependsOnTargets="PackageProjects;PackSharedSources" />
-
-  <Target Name="Test" DependsOnTargets="TestProjects" />
-
-  <Target Name="Verify" DependsOnTargets="VerifyPackages" />
-
-  <Target Name="Build" DependsOnTargets="Clean;Initialize;Compile;Package;Test;Verify" />
+  <PropertyGroup>
+    <PrepareDependsOn>$(PrepareDependsOn);CleanArtifacts;CleanSolutions</PrepareDependsOn>
+    <CompileDependsOn>$(CompileDependsOn);BuildSolutions</CompileDependsOn>
+    <PackageDependsOn>$(PackageDependsOn);PackageProjects;PackSharedSources</PackageDependsOn>
+    <TestDependsOn>$(TestDependsOn);TestProjects</TestDependsOn>
+    <VerifyDependsOn>$(VerifyDependsOn);VerifyPackages</VerifyDependsOn>
+    <CleanDependsOn>$(CleanDependsOn);CleanArtifacts;CleanSolutions</CleanDependsOn>
+    <RebuildDependsOn>$(RebuildDependsOn);RebuildSolutions</RebuildDependsOn>
+  </PropertyGroup>
 
 <!--
 ###################################################################
@@ -32,7 +23,13 @@ These are not part of the standard lifecycle but are useful
 ###################################################################
 -->
 
-  <Target Name="Rebuild" DependsOnTargets="RebuildSolutions" />
+  <Target Name="Resx">
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Sake" Properties="SakeTargets=resx;RepositoryRoot=$(RepositoryRoot)" />
+  </Target>
+
+  <Target Name="NuGetInstall">
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Sake" Properties="SakeTargets=nuget-install;RepositoryRoot=$(RepositoryRoot)" />
+  </Target>
 
 <!--
 ###################################################################
@@ -46,6 +43,25 @@ as they are subject to change.
   <Target Name="CleanArtifacts">
     <!-- intentionally BuildDir, not ArtifactDir -->
     <RemoveDir Directories="$(BuildDir)" />
+  </Target>
+
+<!--
+###################################################################
+Targets: UseVolatileFeed
+
+Replaces $(RepositoryRoot)\NuGet.config feeds.
+###################################################################
+-->
+  <ItemGroup>
+    <UpdateFeeds Include="ARTIFACTS" Value="$(NUGET_VOLATILE_FEED_ARTIFACTS)" Condition="'$(NUGET_VOLATILE_FEED_ARTIFACTS)' != ''" />
+    <UpdateFeeds Include="AspNetCore" Value="$(NUGET_VOLATILE_FEED_AspNetCore)" Condition="'$(NUGET_VOLATILE_FEED_AspNetCore)' != ''" />
+  </ItemGroup>
+
+  <Target Name="UseVolatileFeed" BeforeTargets="Restore" Condition="'@(UpdateFeeds)' != '' AND '$(PreflightRestore)' != 'true'">
+    <UpdatePackageSource NuGetConfigPath="$(RepositoryRoot)NuGet.config"
+      SourceName="%(UpdateFeeds.Identity)"
+      SourceUri="%(UpdateFeeds.Value)"
+      Condition="'%(UpdateFeeds.Value)' != ''" />
   </Target>
 
 <!--
@@ -66,30 +82,39 @@ Executes /t:{Target} on all solutions
     <BuildInParallel>true</BuildInParallel>
   </PropertyGroup>
 
-  <Target Name="_ResolveSolutions">
+  <Target Name="_ResolveSolutions" Returns="@(_SolutionItems)">
     <RemoveDuplicates Inputs="@(Solutions)">
       <Output TaskParameter="Filtered" ItemName="_SolutionItems" />
     </RemoveDuplicates>
 
-    <Error Text="No solutions found to build" Condition="'@(_SolutionItems)' == ''" />
+    <PropertyGroup>
+      <_SolutionProperties>$(_SolutionProperties);Configuration=$(Configuration)</_SolutionProperties>
+      <_SolutionProperties Condition="'$(BuildNumber)' != ''">$(_SolutionProperties);BuildNumber=$(BuildNumber)</_SolutionProperties>
+    </PropertyGroup>
   </Target>
 
   <Target Name="CleanSolutions" DependsOnTargets="_ResolveSolutions">
+
+    <Error Text="No solutions found to build in '$(RepositoryRoot)'" Condition="'@(_SolutionItems)' == ''" />
+
+    <!--
+      Added _SolutionTarget to invalidate subsequent MSBuild calls on the solution.
+      MSBuild incorrectly caches the "Clean" target.
+      TODO remove when upgrading to MSBuild 15.2
+    -->
     <MSBuild Targets="Clean"
       Projects="@(_SolutionItems)"
-      Properties="Configuration=$(Configuration)" />
-  </Target>
-
-  <Target Name="RestoreSolutions" DependsOnTargets="_ResolveSolutions">
-    <MSBuild Targets="Restore"
-      Projects="@(_SolutionItems)"
-      Properties="Configuration=$(Configuration)" />
+      Properties="$(_SolutionProperties);_SolutionTarget=Clean"
+      RemoveProperties="$(_BuildPropertiesToRemove)" />
   </Target>
 
   <Target Name="BuildSolutions" DependsOnTargets="_ResolveSolutions">
+
+    <Error Text="No solutions found to build in '$(RepositoryRoot)'" Condition="'@(_SolutionItems)' == ''" />
+
     <MSBuild Targets="Build"
       Projects="@(_SolutionItems)"
-      Properties="Configuration=$(Configuration)"
+      Properties="$(_SolutionProperties)"
       BuildInParallel="$(BuildInParallel)"
       RemoveProperties="$(_BuildPropertiesToRemove)" />
 
@@ -99,9 +124,12 @@ Executes /t:{Target} on all solutions
   </Target>
 
   <Target Name="RebuildSolutions" DependsOnTargets="_ResolveSolutions">
+
+    <Error Text="No solutions found to build in '$(RepositoryRoot)'" Condition="'@(_SolutionItems)' == ''" />
+
     <MSBuild Targets="Rebuild"
       Projects="@(_SolutionItems)"
-      Properties="Configuration=$(Configuration)"
+      Properties="$(_SolutionProperties)"
       RemoveProperties="$(_BuildPropertiesToRemove)" />
 
     <PropertyGroup>
@@ -111,24 +139,58 @@ Executes /t:{Target} on all solutions
 
 <!--
 ###################################################################
+Target: _GetRestoreItemsForSolutions
+
+Extend the main restore entry point to include all projects from
+solutions as well as the current file
+###################################################################
+-->
+  <Target Name="_GetRestoreItemsForSolutions"
+    DependsOnTargets="_ResolveSolutions"
+    BeforeTargets="_LoadRestoreGraphEntryPoints"
+    Condition="'@(_SolutionItems)' != '' AND '$(PreflightRestore)' != 'true'">
+    <ItemGroup>
+      <RestoreGraphProjectInputItems Include="$(RestoreGraphProjectInput)" />
+    </ItemGroup>
+
+    <!-- See https://github.com/NuGet/NuGet.Client/blob/0c21be9bad12327e929365bf76808274d4c6fe08/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L139 -->
+    <MSBuild Targets="_LoadRestoreGraphEntryPoints"
+      Projects="@(_SolutionItems)"
+      Properties="$(_SolutionProperties)"
+      RemoveProperties="$(_BuildPropertiesToRemove)" >
+      <Output
+        TaskParameter="TargetOutputs"
+        ItemName="RestoreGraphProjectInputItems" />
+    </MSBuild>
+
+    <ItemGroup>
+      <!-- Ensure subsequent calls to MSBuild include essential properties, like BuildNumber. -->
+      <RestoreGraphProjectInputItems Update="@(RestoreGraphProjectInputItems)">
+        <AdditionalProperties>%(RestoreGraphProjectInputItems.AdditionalProperties);$(_SolutionProperties)</AdditionalProperties>
+      </RestoreGraphProjectInputItems>
+    </ItemGroup>
+  </Target>
+
+<!--
+###################################################################
 Target: PackageProjects
 
 Executes /t:Pack on all projects matching src/*/*.csproj.
 ###################################################################
 -->
-  <Target Name="PackageProjects">
+  <Target Name="PackageProjects" DependsOnTargets="_ResolveSolutions">
     <RemoveDuplicates Inputs="@(ProjectsToPack)">
       <Output TaskParameter="Filtered" ItemName="_PackProjectItems" />
     </RemoveDuplicates>
 
     <PropertyGroup>
-      <PackageNoBuild>true</PackageNoBuild>
+      <PackageNoBuild Condition="'$(PackageNoBuild)' == ''">$(_SolutionWasBuilt)</PackageNoBuild>
     </PropertyGroup>
 
     <MSBuild Targets="Pack"
       Projects="@(_PackProjectItems)"
       Condition="'@(_PackProjectItems)' != ''"
-      Properties="Configuration=$(Configuration);PackageOutputPath=$(BuildDir);NoBuild=$(PackageNoBuild)"
+      Properties="$(_SolutionProperties);PackageOutputPath=$(BuildDir);NoBuild=$(PackageNoBuild)"
       BuildInParallel="$(BuildInParallel)"
       RemoveProperties="$(_BuildPropertiesToRemove);PackageNoBuild" />
   </Target>
@@ -152,7 +214,7 @@ that matches "$(RepositoryRoot)/shared/*.Sources".
 
     <MSBuild Targets="Pack"
       Projects="$(MSBuildThisFileDirectory)..\shared\sharedsources.csproj"
-      Properties="PackageOutputPath=$(BuildDir);RepositoryRoot=$(RepositoryRoot);NuspecBasePath=%(_SharedSourceItems.Identity);PackageId=%(FileName)%(Extension)"
+      Properties="PackageOutputPath=$(BuildDir);RepositoryRoot=$(RepositoryRoot);NuspecBasePath=%(_SharedSourceItems.Identity);PackageId=%(FileName)%(Extension);BuildNumber=$(BuildNumber)"
       Condition="'@(_SharedSourceItems)' != ''"
       BuildInParallel="$(BuildInParallel)" />
   </Target>
@@ -174,7 +236,7 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
     <IgnoreFailingTestProjects Condition="'$(KOREBUILD_IGNORE_DOTNET_TEST_EXIT_CODE)' == '1'">true</IgnoreFailingTestProjects>
   </PropertyGroup>
 
-  <Target Name="TestProjects">
+  <Target Name="TestProjects" DependsOnTargets="_ResolveSolutions">
     <RemoveDuplicates Inputs="@(ProjectsToTest)">
       <Output TaskParameter="Filtered" ItemName="_TestProjectItems" />
     </RemoveDuplicates>
@@ -182,7 +244,7 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
     <Message Text="Running tests for:%0A@(_TestProjectItems -> '%(FileName)','%0A')" Importance="High" />
 
     <PropertyGroup>
-      <VSTestNoBuild Condition="'$(VSTestNoBuild)' == ''">$(_SolutionWasBuilt)</VSTestNoBuild>
+    <VSTestNoBuild Condition="'$(VSTestNoBuild)' == ''">$(_SolutionWasBuilt)</VSTestNoBuild>
       <_TestContinueOnError Condition="'$(IgnoreFailingTestProjects)' == 'true'">ErrorAndContinue</_TestContinueOnError>
       <_TestContinueOnError Condition="'$(IgnoreFailingTestProjects)' != 'true'">ErrorAndStop</_TestContinueOnError>
     </PropertyGroup>
@@ -190,7 +252,7 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
     <!-- Intentional use of batching ('%') instead of passing items ('@') so that tests fail sooner -->
     <MSBuild Projects="%(_TestProjectItems.Identity)"
       Targets="VSTest"
-      Properties="Configurationf=$(Configuration);VSTestLogger=$(VSTestLogger);VSTestNoBuild=$(VSTestNoBuild)"
+      Properties="$(_SolutionProperties);VSTestLogger=$(VSTestLogger);VSTestNoBuild=$(VSTestNoBuild)"
       Condition="'@(_TestProjectItems)' != ''"
       ContinueOnError="$(_TestContinueOnError)"
       RemoveProperties="$(_BuildPropertiesToRemove);_TestContinueOnError" />

@@ -3,8 +3,7 @@
     <SharedSourcesFolder>$(RepositoryRoot)shared/</SharedSourcesFolder>
   </PropertyGroup>
 
-  <!-- DisableDefaultItems only when you really want to control what is built and tested. Otherwise, use the Exclude* item groups -->
-  <ItemGroup Condition="'$(DisableDefaultItems)' != 'true'">
+  <ItemGroup>
     <Solutions Include="$(RepositoryRoot)*.sln" Exclude="@(ExcludeSolutions)" />
 
     <ProjectsToPack Include="$(RepositoryRoot)src\*\*.csproj" Exclude="@(ExcludeFromPack)" />

@@ -1,5 +1,13 @@
 <Project>
-  <Target Name="Build">
+  <PropertyGroup>
+    <SakeVersion>0.2.2</SakeVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Sake" Version="$(SakeVersion)" />
+  </ItemGroup>
+
+  <Target Name="Sake">
     <PropertyGroup>
       <ShadeDirectory>$(MSBuildThisFileDirectory)../shade/</ShadeDirectory>
       <SakeExecutable>$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)'))sake/$(SakeVersion)/tools/Sake.exe</SakeExecutable>
@@ -12,8 +20,6 @@
       <MakeFilePath Condition="'$(OS)'!='Windows_NT'">$([MSBuild]::MakeRelative('file://$(RepositoryRoot)', 'file://$(MakeFilePath)'))</MakeFilePath>
 
       <SakeTargets Condition="'$(SakeTargets)' != '' ">$(SakeTargets.Replace(':', ' '))</SakeTargets>
-      <SakeTargets Condition="'$(NoRestore)'=='true'">--no-restore $(SakeTargets)</SakeTargets>
-      <SakeTargets Condition="'$(MakeQuiet)'=='true'">--quiet $(SakeTargets)</SakeTargets>
     </PropertyGroup>
 
     <Exec

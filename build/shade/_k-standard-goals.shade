@@ -4,187 +4,23 @@ use namespace="System.Globalization"
 use namespace="System.IO"
 use namespace="System.Linq"
 use namespace="System.Threading.Tasks"
-use import="BuildEnv"
 use import="Environment"
 use import="Files"
 use import="Json"
-use-ci-loggers
 
 default BASE_DIR='${Directory.GetCurrentDirectory()}'
 default TARGET_DIR='${Path.Combine(BASE_DIR, "artifacts")}'
 default BUILD_DIR='${Path.Combine(TARGET_DIR, "build")}'
-default Configuration='${E("Configuration")}'
-default TEST_PROJECT_GLOB = "test/*/*.csproj"
 
-@{
-  if (string.IsNullOrEmpty(E("BuildNumber")))
-  {
-    E("BuildNumber", BuildNumber);
-  }
-  if (string.IsNullOrEmpty(Configuration))
-  {
-    Configuration = "Debug";
-    E("Configuration", Configuration);
-  }
+functions @{
+    private static bool Quiet { get; set; }
 }
 
-functions
-  @{
-    // convenince method as we incrementally move to MSBuild standard lifecycle
-    void MSBuild(string arguments)
-    {
-      Dotnet("msbuild /nologo"
-             + " \"" + Path.Combine(Directory.GetCurrentDirectory(), ".build/makefile.proj") + "\""
-             + " \"/p:LifecycleType=Standard;Configuration=" + E("Configuration") + "\""
-             + " " + arguments);
-    }
-  }
-
-#--for-ci
-  @{
-    Configuration = "Release";
-    E("Configuration", Configuration);
-  }
-
-#restore-npm-modules
-  @{
-    // Find all dirs that contain a package.json file
-    var npmDirs = GetDirectoriesContaining(Directory.GetCurrentDirectory(), "package.json").ToArray();
-    var npmOptions = E("KOREBUILD_NPM_INSTALL_OPTIONS") ?? "--quiet --depth 0";
-    foreach (var npmDir in npmDirs)
-    {
-        Npm("install " + npmOptions, npmDir);
-    }
-  }
-
-#restore-bower-components
-  -// Find all dirs that contain a bower.json file
-  var bowerDirs = '${GetDirectoriesContaining(Directory.GetCurrentDirectory(), "bower.json")}'
-  bower each='var bowerDir in bowerDirs' bowerCommand='install ${E("KOREBUILD_BOWER_INSTALL_OPTIONS")}'
-
-#run-grunt .restore-npm-modules .restore-bower-components target='initialize'
-  -// Find all dirs that contain a gruntfile.js file
-  var gruntDirs = '${GetDirectoriesContaining(Directory.GetCurrentDirectory(), "gruntfile.js")}'
-  grunt each='var gruntDir in gruntDirs'
-
-#clean-bin-folder
-  rimraf rimrafDir='bin' if='Directory.Exists("bin")'
-
-#clean-npm-modules
-  -// Find all dirs that contain a package.json file
-  var npmDirs = '${
-    GetDirectoriesContaining(Directory.GetCurrentDirectory(), "package.json")
-      .Select(directory => Path.Combine(directory, "node_modules"))
-      .Where(directory => Directory.Exists(directory))
-  }'
-  rimraf each='var rimrafDir in npmDirs'
-
--// Target order is important because clean-npm-modules may (re)create bin folder.
-#deep-clean .clean-npm-modules .clean-bin-folder description='Clean folders that may cause problems for `git clean`.'
-
-#repo-initialize target='initialize' if='!NoRestore'
-  use-volatile-feed
-  @{
-    MSBuild("/t:Initialize");
-  }
-
-#target-dir-clean target='clean'
-  @{
-      if (Directory.Exists(TARGET_DIR))
-      {
-          var directory = new DirectoryInfo(TARGET_DIR);
-          directory.Attributes &= ~FileAttributes.ReadOnly;
-
-          foreach (var subDirectory in directory.GetDirectories().Where(d => d.Name != "msbuild"))
-          {
-              subDirectory.Attributes &= ~FileAttributes.ReadOnly;
-              subDirectory.Delete(true);
-          }
-
-          foreach (var file in directory.EnumerateFiles())
-          {
-            file.Delete();
-          }
-        }
-    }
-
-#build-clean if='Directory.Exists("src")'
-  k-clean each='var projectFile in Files.Include("src/*/*.csproj")'
-
-#ci-deep-clean .deep-clean target='clean' if='IsTeamCity'
-
-#build-compile target='compile'
-  @{
-    MSBuild("/t:Compile");
-  }
-
-#run-api-check .build-compile target='compile' description='Checks the compiled assemblies against a baseline for potential breaking changes'
-  api-check
-
-#build-pack .build-compile target='compile'
-  @{
-    MSBuild("/t:Package");
-  }
-
-#native-compile target='compile' if='!IsLinux && Directory.Exists(Path.Combine(BASE_DIR, "src"))'
-  var programFilesX86 = '${Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)}'
-  var nativeProjects ='${Files.Include(Path.Combine(BASE_DIR, "src", "**", "*.vcxproj"))}'
-
-  @{
-    if (nativeProjects.Any())
-    {
-      var msbuildVersions = new[] { "14.0", "12.0"};
-
-      for (var i = 0; i < msbuildVersions.Length; i++)
-      {
-        var msbuildPath =  Path.Combine(programFilesX86, "MSBuild", msbuildVersions[i], "Bin", "MSBuild.exe");
-        if (File.Exists(msbuildPath))
-        {
-          var commonParameters =
-            " /p:Configuration=" + Configuration +
-            " /p:ProductVersion=1.0.0" +
-            " /p:FileRevision=" + E("DNX_ASSEMBLY_FILE_VERSION") +
-            " /p:BuildVersion=" + E("DNX_BUILD_VERSION");
-
-          foreach (var project in nativeProjects)
-          {
-            Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(project), "bin"));
-            Exec(msbuildPath, project + " /p:Platform=Win32" + commonParameters);
-            Exec(msbuildPath, project + " /p:Platform=x64" + commonParameters);
-          }
-
-          break;
-        }
-
-        if (i == msbuildVersions.Length - 1)
-        {
-          Log.Warn("msbuild version 14 or 12 not found. Please ensure you have the VS 2015 or VS 2013 C++ SDK installed.");
-          Environment.Exit(1);
-        }
-      }
-    }
-  }
-
-  copy sourceDir='${Path.GetDirectoryName(project)}' include='bin/**/' outputDir='${Path.Combine(BUILD_DIR, Path.GetFileNameWithoutExtension(project))}' overwrite='${true}' each='var project in nativeProjects'
-
-#nuget-verify target='package' description='Verify if all the packages are generated properly'
-  @{
-      MSBuild("/t:VerifyPackages");
-  }
-
-#nuget-install target='install' description='Install NuGet packages to local repo'
+#nuget-install description='Install NuGet packages to local repo'
   -if (Directory.Exists("src") && Directory.Exists(BUILD_DIR)) {
     nuget-packages-add sourcePackagesDir='${BUILD_DIR}' targetPackagesDir='${E("PACKAGES_PUBLISH_DIR")}'
     nuget-resilient-publish sourcePackagesDir='${BUILD_DIR}' nugetFeed='${E("NUGET_PUBLISH_FEED")}' if='!string.IsNullOrEmpty(E("NUGET_PUBLISH_FEED"))'
   -}
-
-#xunit-test target='test'
-  @{
-    MSBuild("/t:Test");
-  }
-
-#make-roslyn-fast
-  ngen-roslyn
 
 #resx
    @{
@@ -208,25 +44,7 @@ functions
      }
    }
 
-#--no-restore
-  @{ NoRestore = true; }
-
-#--quiet
-  @{
-    AddToE("KOREBUILD_DOTNET_RESTORE_OPTIONS", "--verbosity minimal");
-    AddToE("KOREBUILD_BOWER_INSTALL_OPTIONS", "--quiet");
-    AddToE("KOREBUILD_NPM_INSTALL_OPTIONS", "--quiet --depth 0 --progress false");
-    Quiet = true;
-  }
-
-#--parallel
-   @{ ExecuteParallel = true; }
-
 functions @{
-    private static bool Quiet { get; set; }
-    private static bool NoRestore { get; set; }
-    private static bool ExecuteParallel { get; set; }
-
     string E(string key) { return Environment.GetEnvironmentVariable(key); }
     void E(string key, string value) { Environment.SetEnvironmentVariable(key, value); }
     void AddToE(string key, string append)
@@ -297,16 +115,6 @@ functions @{
         Log.Warn("   command not found");
         return false;
       }
-    }
-
-    bool BuildSrcOnly
-    {
-      get { return E("KOREBUILD_BUILD_SRC_ONLY") == "1"; }
-    }
-
-    string BuildFramework
-    {
-      get { return E("KOREBUILD_BUILD_FRAMEWORK"); }
     }
 }
 

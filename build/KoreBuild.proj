@@ -1,0 +1,61 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      TFM used only for the purpose of restoring build tools.
+      It does not affect the TFM of projects
+    -->
+    <TargetFramework>netcoreapp1.0</TargetFramework>
+
+    <!--
+      We want to ensure these properties do not flow into sub-builds.
+      This group of properties should be specified in RemoveProperties when an MSBuild task is used.
+      These properties include those that could interfere with inner builds
+      or could result in an unnecessary build cache miss.
+    -->
+    <_BuildPropertiesToRemove>$(_BuildPropertiesToRemove);TargetFramework;TargetFrameworks;RestoreGraphProjectInput;_InvalidConfigurationWarn;_InvalidConfigurationError</_BuildPropertiesToRemove>
+
+    <!--
+      Extend the restore step to include multiple projects.
+      See NuGet.targets in the MSBuild folder for more details.
+    -->
+    <RestoreGraphProjectInput Condition="'$(PreflightRestore)' == 'true'">$(MSBuildProjectFullPath);$(MSBuildThisFileDirectory)shared\sharedsources.csproj</RestoreGraphProjectInput>
+  </PropertyGroup>
+
+  <!--
+    Common package references.
+    These are downloaded and installed in the 'PreflightRestore'. This is required because MSBuild
+    does not load task assemblies that are downloading during the restore target. The UsingTask
+    step executes before task assemblies are available.
+  -->
+  <ItemGroup>
+    <!-- Installs general-purpose build tasks -->
+    <PackageReference Include="Internal.AspNetCore.BuildTools.Tasks" Version="1.0.0-*" />
+    <!--
+      Optionally install .NET Framework reference assemblis into the NuGet cache. This can be used with the 'ReferenceAssemblyRoot'
+      environment variable to compile for .NET Framework on xplat without installing Mono.
+    -->
+    <PackageReference Include="NETFrameworkReferenceAssemblies" Version="$(NetFxVersion)" Condition="'$(NetFxVersion)'!=''" />
+    <!-- Additional package references required to make other targets work should be kept in the files where those targets are defined -->
+  </ItemGroup>
+
+
+  <!-- Import Microsoft.Common targets which will import NuGet. -->
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+
+  <!-- Undo some special Microsoft.Common properties since this is not a normal project. -->
+  <PropertyGroup>
+    <_InvalidConfigurationWarn>false</_InvalidConfigurationWarn>
+    <_InvalidConfigurationError>false</_InvalidConfigurationError>
+  </PropertyGroup>
+
+  <Import Project="targets\KoreBuild.Common.props" />
+  <Import Project="targets\KoreBuild.DefaultBuildSettings.props" Condition="'$(DisableDefaultBuildSettings)' != 'true'" />
+  <Import Project="$(RepositoryRoot)build\repo.props" Condition="Exists('$(RepositoryRoot)build\repo.props')" />
+
+  <Import Project="targets\KoreBuild.Common.targets" />
+  <Import Project="targets\sake.targets" />
+  <Import Project="targets\KoreBuild.SolutionItems.targets" Condition="'$(DisableDefaultItems)' != 'true'" />
+  <Import Project="targets\KoreBuild.SolutionBuild.targets" Condition="'$(DisableDefaultTargets)' != 'true'" />
+
+  <Import Project="$(RepositoryRoot)build\repo.targets" Condition="Exists('$(RepositoryRoot)build\repo.targets')" />
+</Project>

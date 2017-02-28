@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
-    <RepositoryRoot Condition="'$(RepositoryRoot)'==''">$(MSBuildThisFileDirectory)..\..\</RepositoryRoot>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <RepositoryRoot Condition="'$(RepositoryRoot)' == ''">$(MSBuildThisFileDirectory)..\..\</RepositoryRoot>
     <RepositoryRoot>$([MSBuild]::EnsureTrailingSlash('$(RepositoryRoot)'))</RepositoryRoot>
     <ArtifactsDir>$(RepositoryRoot)artifacts\</ArtifactsDir>
     <BuildDir>$(ArtifactsDir)build\</BuildDir>

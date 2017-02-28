@@ -84,10 +84,7 @@ if (!(Test-Path $nugetExePath))
     Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/v4.0.0-rc4/NuGet.exe" -OutFile "$koreBuildFolder/nuget.exe"
 }
 
-$env:KOREBUILD_FOLDER=$koreBuildFolder
-$makeFileProj = "$koreBuildFolder/makefile.proj"
-exec dotnet restore "$makeFileProj"
-
+$makeFileProj = "$koreBuildFolder/KoreBuild.proj"
 $msbuildArtifactsDir = "$repoFolder/artifacts/msbuild"
 $msbuildLogFilePath = "$msbuildArtifactsDir/msbuild.log"
 $msBuildResponseFile = "$msbuildArtifactsDir/msbuild.rsp"
@@ -98,15 +95,19 @@ $msBuildArguments = @"
 "$makeFileProj"
 /p:RepositoryRoot="$repoFolder/"
 /fl
-/flp:LogFile="$msbuildLogFilePath";Verbosity=diagnostic;Encoding=UTF-8
-/p:SakeTargets=$($allparams -replace ' ',':')
+/flp:LogFile="$msbuildLogFilePath";Verbosity=detailed;Encoding=UTF-8
+/clp:Summary
 "@
 
+$allparams | ForEach-Object { $msBuildArguments += "`n`"$_`"" }
 
 if (!(Test-Path $msbuildArtifactsDir))
 {
     mkdir $msbuildArtifactsDir | Out-Null
 }
+
 $msBuildArguments | Out-File -Encoding ASCII -FilePath $msBuildResponseFile
 
-exec dotnet build `@"$msBuildResponseFile"
+exec dotnet msbuild /nologo /t:Restore /p:PreflightRestore=true $makeFileProj
+exec dotnet msbuild `@"$msBuildResponseFile"
+

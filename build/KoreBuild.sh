@@ -23,7 +23,7 @@ __exec() {
     fi
 }
 
-targets=""
+msbuild_args=""
 repoFolder=""
 while [[ $# > 0 ]]; do
     case $1 in
@@ -32,19 +32,15 @@ while [[ $# > 0 ]]; do
             repoFolder=$1
             ;;
         *)
-            if [ -z "$targets" ]; then
-                targets="$1"
-            else
-                targets+=":$1"
-            fi
+            msbuild_args+="\"$1\"\n"
             ;;
     esac
     shift
 done
 if [ ! -e "$repoFolder" ]; then
-    printf "Usage: $filename -r [repoFolder] [ [targets] ]\n\n"
-    echo "       -r [repo]     The repository to build"
-    echo "       [targets]     A space separated list of targets to run"
+    printf "Usage: $filename -r [repoFolder] [ [msbuild-args] ]\n\n"
+    echo "       -r [repo]       The repository to build"
+    echo "       [msbuild-args]  A space separated list of arguments to pass to MSBuild"
     exit 1
 fi
 
@@ -88,7 +84,6 @@ else
     # requires sudo
     [ -z "$DOTNET_INSTALL_DIR" ] && DOTNET_INSTALL_DIR=~/.dotnet
     export DOTNET_INSTALL_DIR=$DOTNET_INSTALL_DIR
-    export KOREBUILD_FOLDER="$(dirname $koreBuildFolder)"
     chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
 
     $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
@@ -122,11 +117,7 @@ if [ ! -f $nugetPath ]; then
     wget -O $nugetPath $nugetUrl 2>/dev/null || curl -o $nugetPath --location $nugetUrl 2>/dev/null
 fi
 
-export KOREBUILD_FOLDER="$koreBuildFolder"
-makeFileProj="$koreBuildFolder/makefile.proj"
-
-__exec dotnet restore "$makeFileProj" "/p:NetFxVersion=$netfxversion"
-
+makeFileProj="$koreBuildFolder/KoreBuild.proj"
 msbuildArtifactsDir="$repoFolder/artifacts/msbuild"
 msbuildResponseFile="$msbuildArtifactsDir/msbuild.rsp"
 msbuildLogFile="$msbuildArtifactsDir/msbuild.log"
@@ -140,9 +131,12 @@ cat > $msbuildResponseFile <<ENDMSBUILDARGS
 /m
 "$makeFileProj"
 /p:RepositoryRoot="$repoFolder/"
+/p:NetFxVersion=$netfxversion
 /fl
-/flp:LogFile="$msbuildLogFile";Verbosity=diagnostic;Encoding=UTF-8
-/p:SakeTargets=$targets
+/flp:LogFile="$msbuildLogFile";Verbosity=detailed;Encoding=UTF-8
+/clp:Summary
 ENDMSBUILDARGS
+echo -e "$msbuild_args" >> $msbuildResponseFile
 
+__exec dotnet msbuild /nologo /t:Restore /p:PreflightRestore=true $makeFileProj
 __exec dotnet msbuild @"$msbuildResponseFile"
