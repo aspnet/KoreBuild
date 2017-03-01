@@ -34,9 +34,6 @@ These are not part of the standard lifecycle but are useful
 
   <Target Name="Rebuild" DependsOnTargets="RebuildSolutions" />
 
-  <!-- TODO implement. See https://github.com/aspnet/BuildTools/issues/162 -->
-  <Target Name="Resx" />
-
 <!--
 ###################################################################
 Individual build steps.
@@ -120,15 +117,11 @@ Executes /t:Pack on all projects matching src/*/*.csproj.
 ###################################################################
 -->
   <Target Name="PackageProjects">
-    <!-- TODO consider using GeneratePackageOnBuild or calling Pack on the solution.
-        This would require setting IsPackable=false and samples and possible on tests (see https://github.com/NuGet/NuGet.Client/pull/1170) -->
     <RemoveDuplicates Inputs="@(ProjectsToPack)">
       <Output TaskParameter="Filtered" ItemName="_PackProjectItems" />
     </RemoveDuplicates>
 
     <PropertyGroup>
-      <!-- TODO remove when we stop using Sake. Because Sake invokes the project multiple times, so this value is always false -->
-      <!--<PackageNoBuild Condition="'$(PackageNoBuild)' == ''">$(_SolutionWasBuilt)</PackageNoBuild>-->
       <PackageNoBuild>true</PackageNoBuild>
     </PropertyGroup>
 
@@ -176,7 +169,6 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
 -->
 
   <PropertyGroup>
-    <!-- TODO if VS Test doesn't make minimal output the default log setting, we can set that here. cref https://github.com/Microsoft/vstest/issues/301 -->
     <VSTestLogger Condition=" '$(VSTestLogger)' == '' AND '$(TEAMCITY_VERSION)' != '' ">trx</VSTestLogger>
     <IgnoreFailingTestProjects>false</IgnoreFailingTestProjects>
     <IgnoreFailingTestProjects Condition="'$(KOREBUILD_IGNORE_DOTNET_TEST_EXIT_CODE)' == '1'">true</IgnoreFailingTestProjects>
