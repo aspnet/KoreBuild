@@ -148,7 +148,9 @@ solutions as well as the current file
   <Target Name="_GetRestoreItemsForSolutions"
     DependsOnTargets="_ResolveSolutions"
     BeforeTargets="_LoadRestoreGraphEntryPoints"
-    Condition="'@(_SolutionItems)' != '' AND '$(PreflightRestore)' != 'true'">
+    Condition=" '$(PreflightRestore)' != 'true' ">
+    <Error Text="No solutions found to build in '$(RepositoryRoot)'" Condition=" '@(_SolutionItems)' == '' " />
+
     <ItemGroup>
       <RestoreGraphProjectInputItems Include="$(RestoreGraphProjectInput)" />
     </ItemGroup>
