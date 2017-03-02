@@ -119,6 +119,7 @@ fi
 
 makeFileProj="$koreBuildFolder/KoreBuild.proj"
 msbuildArtifactsDir="$repoFolder/artifacts/msbuild"
+msbuildPreflightResponseFile="$msbuildArtifactsDir/msbuild.preflight.rsp"
 msbuildResponseFile="$msbuildArtifactsDir/msbuild.rsp"
 msbuildLogFile="$msbuildArtifactsDir/msbuild.log"
 
@@ -126,17 +127,26 @@ if [ ! -f $msbuildArtifactsDir ]; then
     mkdir -p $msbuildArtifactsDir
 fi
 
+cat > $msbuildPreflightResponseFile <<ENDMSBUILDPREFLIGHT
+/nologo
+/p:NetFxVersion=$netfxversion
+/p:PreflightRestore=true
+/p:RepositoryRoot="$repoFolder/"
+/t:Restore
+"$makeFileProj"
+ENDMSBUILDPREFLIGHT
+
+__exec dotnet msbuild @"$msbuildPreflightResponseFile"
+
 cat > $msbuildResponseFile <<ENDMSBUILDARGS
 /nologo
 /m
-"$makeFileProj"
 /p:RepositoryRoot="$repoFolder/"
-/p:NetFxVersion=$netfxversion
 /fl
 /flp:LogFile="$msbuildLogFile";Verbosity=detailed;Encoding=UTF-8
 /clp:Summary
+"$makeFileProj"
 ENDMSBUILDARGS
 echo -e "$msbuild_args" >> $msbuildResponseFile
 
-__exec dotnet msbuild /nologo /t:Restore /p:PreflightRestore=true $makeFileProj
 __exec dotnet msbuild @"$msbuildResponseFile"
