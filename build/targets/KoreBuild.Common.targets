@@ -13,8 +13,8 @@ extending the *DependsOn property
     <CompileDependsOn>Prepare;Restore</CompileDependsOn>
     <PackageDependsOn>Compile</PackageDependsOn>
     <TestDependsOn>Package</TestDependsOn>
-    <VerifyDependsOn>Package</VerifyDependsOn>
-    <BuildDependsOn>Test;Verify</BuildDependsOn>
+    <VerifyDependsOn>Test</VerifyDependsOn>
+    <BuildDependsOn>Verify</BuildDependsOn>
 
     <CleanDependsOn></CleanDependsOn>
     <RebuildDependsOn></RebuildDependsOn>
