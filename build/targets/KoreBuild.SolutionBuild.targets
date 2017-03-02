@@ -146,11 +146,12 @@ solutions as well as the current file
 ###################################################################
 -->
   <Target Name="_GetRestoreItemsForSolutions"
-    DependsOnTargets="_ResolveSolutions"
+    DependsOnTargets="_ResolveSolutions;_InnerGetRestoreItemsForSolutions"
     BeforeTargets="_LoadRestoreGraphEntryPoints"
-    Condition=" '$(PreflightRestore)' != 'true' ">
-    <Error Text="No solutions found to build in '$(RepositoryRoot)'" Condition=" '@(_SolutionItems)' == '' " />
+    Condition=" '$(PreflightRestore)' != 'true' " />
 
+  <!-- _GetRestoreItemsForSolutions ensures @(_SolutionItems) has been set up. -->
+  <Target Name="_InnerGetRestoreItemsForSolutions" Condition=" '@(_SolutionItems)' != '' ">
     <ItemGroup>
       <RestoreGraphProjectInputItems Include="$(RestoreGraphProjectInput)" />
     </ItemGroup>
