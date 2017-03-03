@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
+set -o pipefail
 
 # Colors
 GREEN="\033[1;32m"
 CYAN="\033[0;36m"
 RESET="\033[0m"
 RED="\033[0;31m"
+
 
 # functions
 
@@ -14,7 +16,13 @@ __exec() {
 
     local cmdname=$(basename $cmd)
     echo -e "${CYAN}> $cmdname $@${RESET}"
-    $cmd "$@"
+
+    if [ -z "${TRAVIS}" ]; then
+        $cmd "$@"
+    else
+        # Work around https://github.com/Microsoft/msbuild/issues/1792
+        $cmd "$@" | tee /dev/null
+    fi
 
     local exitCode=$?
     if [ $exitCode -ne 0 ]; then
