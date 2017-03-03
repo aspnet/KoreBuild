@@ -89,7 +89,7 @@ $msbuildArtifactsDir = "$repoFolder/artifacts/msbuild"
 $msbuildLogFilePath = "$msbuildArtifactsDir/msbuild.log"
 $msBuildResponseFile = "$msbuildArtifactsDir/msbuild.rsp"
 
-$preflightClpOption='/clp=DisableConsoleColor'
+$preflightClpOption='/clp:DisableConsoleColor'
 $msbuildClpOption='/clp:DisableConsoleColor;Summary'
 if [ -z "${env:CI}${env:APPVEYOR}${env:TEAMCITY_VERSION}${env:TRAVIS}" ]; then
     # Not on any of the CI machines. Fine to use colors.

@@ -127,7 +127,7 @@ if [ ! -f $msbuildArtifactsDir ]; then
     mkdir -p $msbuildArtifactsDir
 fi
 
-preflightClpOption='/clp=DisableConsoleColor'
+preflightClpOption='/clp:DisableConsoleColor'
 msbuildClpOption='/clp:DisableConsoleColor;Summary'
 if [ -z "${CI}${APPVEYOR}${TEAMCITY_VERSION}${TRAVIS}" ]; then
     # Not on any of the CI machines. Fine to use colors.
