@@ -89,14 +89,23 @@ $msbuildArtifactsDir = "$repoFolder/artifacts/msbuild"
 $msbuildLogFilePath = "$msbuildArtifactsDir/msbuild.log"
 $msBuildResponseFile = "$msbuildArtifactsDir/msbuild.rsp"
 
+$preflightClpOption='/clp:DisableConsoleColor'
+$msbuildClpOption='/clp:DisableConsoleColor;Summary'
+if ("${env:CI}${env:APPVEYOR}${env:TEAMCITY_VERSION}${env:TRAVIS}" -eq "")
+{
+    # Not on any of the CI machines. Fine to use colors.
+    $preflightClpOption=''
+    $msbuildClpOption='/clp:Summary'
+}
+
 $msBuildArguments = @"
 /nologo
 /m
-"$makeFileProj"
 /p:RepositoryRoot="$repoFolder/"
 /fl
 /flp:LogFile="$msbuildLogFilePath";Verbosity=detailed;Encoding=UTF-8
-/clp:Summary
+$msbuildClpOption
+"$makeFileProj"
 "@
 
 $allparams | ForEach-Object { $msBuildArguments += "`n`"$_`"" }
@@ -108,6 +117,5 @@ if (!(Test-Path $msbuildArtifactsDir))
 
 $msBuildArguments | Out-File -Encoding ASCII -FilePath $msBuildResponseFile
 
-exec dotnet msbuild /nologo /t:Restore /p:PreflightRestore=true $makeFileProj
+exec dotnet msbuild /nologo $preflightClpOption /t:Restore /p:PreflightRestore=true "$makeFileProj"
 exec dotnet msbuild `@"$msBuildResponseFile"
-
