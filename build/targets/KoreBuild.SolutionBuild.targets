@@ -234,7 +234,6 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
 -->
 
   <PropertyGroup>
-    <VSTestLogger Condition=" '$(VSTestLogger)' == '' AND '$(TEAMCITY_VERSION)' != '' ">trx</VSTestLogger>
     <IgnoreFailingTestProjects>false</IgnoreFailingTestProjects>
     <IgnoreFailingTestProjects Condition="'$(KOREBUILD_IGNORE_DOTNET_TEST_EXIT_CODE)' == '1'">true</IgnoreFailingTestProjects>
   </PropertyGroup>
@@ -244,7 +243,9 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
       <Output TaskParameter="Filtered" ItemName="_TestProjectItems" />
     </RemoveDuplicates>
 
-    <Message Text="Running tests for:%0A@(_TestProjectItems -> '%(FileName)','%0A')" Importance="High" />
+    <Message Text="Running tests for:%0A@(_TestProjectItems -> '%(FileName)','%0A')"
+      Importance="High"
+      Condition="'@(_TestProjectItems)' != ''" />
 
     <PropertyGroup>
     <VSTestNoBuild Condition="'$(VSTestNoBuild)' == ''">$(_SolutionWasBuilt)</VSTestNoBuild>
@@ -255,7 +256,7 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
     <!-- Intentional use of batching ('%') instead of passing items ('@') so that tests fail sooner -->
     <MSBuild Projects="%(_TestProjectItems.Identity)"
       Targets="VSTest"
-      Properties="$(_SolutionProperties);VSTestLogger=$(VSTestLogger);VSTestNoBuild=$(VSTestNoBuild)"
+      Properties="$(_SolutionProperties);VSTestNoBuild=$(VSTestNoBuild)"
       Condition="'@(_TestProjectItems)' != ''"
       ContinueOnError="$(_TestContinueOnError)"
       RemoveProperties="$(_BuildPropertiesToRemove);_TestContinueOnError" />
@@ -275,7 +276,7 @@ repository root.
     <NuGetVerifierRuleFile>$(RepositoryRoot)NuGetPackageVerifier.json</NuGetVerifierRuleFile>
   </PropertyGroup>
 
-  <Target Name="VerifyPackages">
+  <Target Name="VerifyPackages" Condition="Exists('$(NuGetVerifierRuleFile)')">
     <ItemGroup>
       <Packages Include="$(BuildDir)*.nupkg" />
     </ItemGroup>
@@ -286,7 +287,7 @@ repository root.
 
     <VerifyPackages ArtifactDirectory="$(BuildDir)"
       RuleFile="$(NuGetVerifierRuleFile)"
-      Condition="Exists('$(NuGetVerifierRuleFile)') AND Exists('$(BuildDir)')" />
+      Condition="Exists('$(BuildDir)')" />
   </Target>
 
 </Project>
