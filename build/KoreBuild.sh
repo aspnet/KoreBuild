@@ -127,12 +127,21 @@ if [ ! -f $msbuildArtifactsDir ]; then
     mkdir -p $msbuildArtifactsDir
 fi
 
+preflightClpOption='/clp=DisableConsoleColor'
+msbuildClpOption='/clp:DisableConsoleColor;Summary'
+if [ -z "${CI}${APPVEYOR}${TEAMCITY_VERSION}${TRAVIS}" ]; then
+    # Not on any of the CI machines. Fine to use colors.
+    preflightClpOption=''
+    msbuildClpOption='/clp:Summary'
+fi
+
 cat > $msbuildPreflightResponseFile <<ENDMSBUILDPREFLIGHT
 /nologo
 /p:NetFxVersion=$netfxversion
 /p:PreflightRestore=true
 /p:RepositoryRoot="$repoFolder/"
 /t:Restore
+$preflightClpOption
 "$makeFileProj"
 ENDMSBUILDPREFLIGHT
 
@@ -144,7 +153,7 @@ cat > $msbuildResponseFile <<ENDMSBUILDARGS
 /p:RepositoryRoot="$repoFolder/"
 /fl
 /flp:LogFile="$msbuildLogFile";Verbosity=detailed;Encoding=UTF-8
-/clp:Summary
+$msbuildClpOption
 "$makeFileProj"
 ENDMSBUILDARGS
 echo -e "$msbuild_args" >> $msbuildResponseFile
