@@ -17,6 +17,8 @@ if (!$repoFolder) {
     throw "REPO_FOLDER is not set"
 }
 
+Write-Host -ForegroundColor Red "`nThis branch of KoreBuild will be deleted soon. Please upgrade your repo to build with the 'dev' branch of KoreBuild.`n"
+
 Write-Host "Building $repoFolder"
 cd $repoFolder
 
@@ -110,3 +112,5 @@ if (!(Test-Path $msbuildArtifactsDir))
 $msBuildArguments | Out-File -Encoding ASCII -FilePath $msBuildResponseFile
 
 exec dotnet build `@"$msBuildResponseFile"
+
+Write-Host -ForegroundColor Red "`nThis branch of KoreBuild will be deleted soon. Please upgrade your repo to build with the 'dev' branch of KoreBuild.`n"

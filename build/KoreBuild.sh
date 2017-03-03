@@ -48,6 +48,10 @@ if [ ! -e "$repoFolder" ]; then
     exit 1
 fi
 
+echo ""
+echo -e "${RED}This branch of KoreBuild will be deleted soon. Please upgrade your repo to build with the 'dev' branch of KoreBuild.${RESET}"
+echo ""
+
 echo "Building $repoFolder"
 cd $repoFolder
 
@@ -146,3 +150,6 @@ cat > $msbuildResponseFile <<ENDMSBUILDARGS
 ENDMSBUILDARGS
 
 __exec dotnet msbuild @"$msbuildResponseFile"
+echo ""
+echo -e "${RED}This branch of KoreBuild will be deleted soon. Please upgrade your repo to build with the 'dev' branch of KoreBuild.${RESET}"
+echo ""
