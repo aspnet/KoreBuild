@@ -1,5 +1,3 @@
-default PROJECT_JSON="project.json"
-
 @{
 
     var srcRoot = Path.Combine(BASE_DIR, "src");
@@ -19,16 +17,16 @@ default PROJECT_JSON="project.json"
             break;
         }
 
-        var projectJson = new FileInfo(Path.Combine(srcDirectory.FullName, PROJECT_JSON));
-        if (!projectJson.Exists)
+        var projectFile = new FileInfo(Path.Combine(srcDirectory.FullName, srcDirectory.Name + ".csproj"));
+        if (!projectFile.Exists)
         {
             continue;
         }
 
         if (!IsLinux)
         {
-            RunApiCheck(srcDirectory, projectJson.FullName, Configuration, fullFrameworkMonikerPrefix, "net45", generateApiListing, excludePublicInternalTypes);
-            RunApiCheck(srcDirectory, projectJson.FullName, Configuration, coreMonikerPrefix, "netcore", generateApiListing, excludePublicInternalTypes);
+            RunApiCheck(srcDirectory, Configuration, fullFrameworkMonikerPrefix, "net45", generateApiListing, excludePublicInternalTypes);
+            RunApiCheck(srcDirectory, Configuration, coreMonikerPrefix, "netcore", generateApiListing, excludePublicInternalTypes);
         }
     }
 }
@@ -69,7 +67,6 @@ functions @{
 
     void RunApiCheck(
         DirectoryInfo directoryInfo,
-        string projectJson,
         string configuration,
         string[] monikerPrefix,
         string framework,
@@ -82,6 +79,14 @@ functions @{
         var buildFolder = new DirectoryInfo(Path.Combine(directoryInfo.FullName, "bin", configuration));
         if (!buildFolder.Exists)
         {
+            Log.Info("No build folder found for " + Path.Combine(directoryInfo.FullName, "bin", configuration));
+            return;
+        }
+
+        var assetsJson = new FileInfo(Path.Combine(directoryInfo.FullName, "obj", "project.assets.json"));
+        if(!assetsJson.Exists)
+        {
+            Log.Info("No project.assets.json file found " + Path.Combine(directoryInfo.FullName, "bin", configuration));
             return;
         }
 
@@ -115,8 +120,7 @@ functions @{
                 var arguments = GenerateApiCheckArguments(framework,
                     "generate",
                     "-a " + dll.FullName,
-                    "-p " + projectJson,
-                    "-c " + configuration,
+                    "-p " + assetsJson.FullName,
                     "-o " + Path.Combine(directoryInfo.FullName, apiListingFile));
 
                 Exec(GenerateApiCheckInvoker(framework), string.Join(" ",arguments));
@@ -132,8 +136,7 @@ functions @{
                     "compare",
                     "-b " + apiListing.FullName,
                     "-a " + dll.FullName,
-                    "-p " + projectJson,
-                    "-c " + configuration);
+                    "-p " + assetsJson.FullName);
                 
                 if (apiListingExceptions != null)
                 {
