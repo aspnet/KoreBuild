@@ -9,7 +9,6 @@
       WorkingDirectory="$(RepositoryDir)" />
     <ItemGroup>
       <Packages Include="$(BuildDir)/*.nupkg" Exclude="$(BuildDir)/*.symbols.nupkg" />
-      <SymbolsPackages Include="$(BuildDir)/*.symbols.nupkg" />
     </ItemGroup>
   </Target>
 </Project>
