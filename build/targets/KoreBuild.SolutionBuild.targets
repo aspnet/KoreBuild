@@ -8,7 +8,7 @@
   <PropertyGroup>
     <PrepareDependsOn>$(PrepareDependsOn);CleanArtifacts;CleanSolutions</PrepareDependsOn>
     <CompileDependsOn>$(CompileDependsOn);BuildSolutions</CompileDependsOn>
-    <PackageDependsOn>$(PackageDependsOn);PackageProjects;PackSharedSources</PackageDependsOn>
+    <PackageDependsOn>$(PackageDependsOn);PackageProjects</PackageDependsOn>
     <TestDependsOn>$(TestDependsOn);TestProjects</TestDependsOn>
     <VerifyDependsOn>$(VerifyDependsOn);VerifyPackages</VerifyDependsOn>
     <CleanDependsOn>$(CleanDependsOn);CleanArtifacts;CleanSolutions</CleanDependsOn>
