@@ -8,7 +8,7 @@
   <PropertyGroup>
     <PrepareDependsOn>$(PrepareDependsOn);CleanArtifacts;CleanSolutions</PrepareDependsOn>
     <CompileDependsOn>$(CompileDependsOn);BuildSolutions</CompileDependsOn>
-    <PackageDependsOn>$(PackageDependsOn);PackageProjects;PackSharedSources</PackageDependsOn>
+    <PackageDependsOn>$(PackageDependsOn);PackageProjects</PackageDependsOn>
     <TestDependsOn>$(TestDependsOn);TestProjects</TestDependsOn>
     <VerifyDependsOn>$(VerifyDependsOn);VerifyPackages</VerifyDependsOn>
     <CleanDependsOn>$(CleanDependsOn);CleanArtifacts;CleanSolutions</CleanDependsOn>
@@ -196,30 +196,6 @@ Executes /t:Pack on all projects matching src/*/*.csproj.
       Properties="$(_SolutionProperties);PackageOutputPath=$(BuildDir);NoBuild=$(PackageNoBuild)"
       BuildInParallel="$(BuildInParallel)"
       RemoveProperties="$(_BuildPropertiesToRemove);PackageNoBuild" />
-  </Target>
-
-<!--
-###################################################################
-Target: PackSharedSources
-
-Creates a content files package for all each directory in
-that matches "$(RepositoryRoot)/shared/*.Sources".
-###################################################################
--->
-  <Target Name="PackSharedSources" Condition="Exists('$(SharedSourcesFolder)') OR '@(SharedSourceDirectories)' != ''">
-    <RemoveDuplicates Inputs="@(SharedSourceDirectories)">
-      <Output TaskParameter="Filtered" ItemName="_SharedSourceItems" />
-    </RemoveDuplicates>
-
-    <Message Importance="normal"
-      Text="Producing shared source package for %(_SharedSourceItems.Identity)"
-      Condition="'@(_SharedSourceItems)' != ''" />
-
-    <MSBuild Targets="Pack"
-      Projects="$(MSBuildThisFileDirectory)..\shared\sharedsources.csproj"
-      Properties="PackageOutputPath=$(BuildDir);RepositoryRoot=$(RepositoryRoot);NuspecBasePath=%(_SharedSourceItems.Identity);PackageId=%(FileName)%(Extension);BuildNumber=$(BuildNumber)"
-      Condition="'@(_SharedSourceItems)' != ''"
-      BuildInParallel="$(BuildInParallel)" />
   </Target>
 
 <!--
