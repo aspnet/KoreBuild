@@ -27,8 +27,23 @@ These are not part of the standard lifecycle but are useful
 ###################################################################
 -->
 
-  <Target Name="Resx">
-    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Sake" Properties="SakeTargets=resx;RepositoryRoot=$(RepositoryRoot)" />
+  <Target Name="Resx" DependsOnTargets="_ResolveSolutions">
+    <Warning Text="No solutions found to build in '$(RepositoryRoot)'" Condition="'@(_SolutionItems)' == ''" />
+
+    <PropertyGroup>
+      <_ResxTargets>$(MSBuildThisFileDirectory)Project.CSharp.Resx.targets</_ResxTargets>
+      <_ResxSlnProps>$(_SolutionProperties)</_ResxSlnProps>
+      <!-- See comments in Project.CSharp.Resx.targets for what this does-->
+      <_ResxSlnProps>$(_ResxSlnProps);CustomAfterMicrosoftCommonTargets=$(_ResxTargets)</_ResxSlnProps>
+      <_ResxSlnProps>$(_ResxSlnProps);CustomAfterMicrosoftCommonCrossTargetingTargets=$(_ResxTargets)</_ResxSlnProps>
+    </PropertyGroup>
+
+    <MSBuild Targets="_GenerateResx"
+      Projects="@(_SolutionItems)"
+      Properties="$(_ResxSlnProps)"
+      BuildInParallel="$(BuildInParallel)"
+      Condition="'@(_SolutionItems)' != ''"
+      RemoveProperties="$(_BuildPropertiesToRemove)" />
   </Target>
 
   <Target Name="NuGetInstall">

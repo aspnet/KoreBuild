@@ -22,28 +22,6 @@ functions @{
     nuget-resilient-publish sourcePackagesDir='${BUILD_DIR}' nugetFeed='${E("NUGET_PUBLISH_FEED")}' if='!string.IsNullOrEmpty(E("NUGET_PUBLISH_FEED"))'
   -}
 
-#resx
-   @{
-     var cultures = CultureInfo.GetCultures(CultureTypes.NeutralCultures | CultureTypes.InstalledWin32Cultures | CultureTypes.SpecificCultures);
-     foreach (var file in Directory.EnumerateFiles(BASE_DIR, "*.resx", SearchOption.AllDirectories))
-     {
-        var splitFileName = Path.GetFileNameWithoutExtension(file).Split(new string[] { "." }, StringSplitOptions.None);
-
-        if (splitFileName.Length > 1)
-        {
-            var localeString = splitFileName.Last();
-            if (!cultures.Any(c => localeString.Equals(c.Name)))
-            {
-                UpdateResx(file);
-            }
-        }
-        else
-        {
-            UpdateResx(file);
-        }
-     }
-   }
-
 functions @{
     string E(string key) { return Environment.GetEnvironmentVariable(key); }
     void E(string key, string value) { Environment.SetEnvironmentVariable(key, value); }
