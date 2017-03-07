@@ -57,13 +57,9 @@ cd $repoFolder
 
 scriptRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Make the path relative to the repo root because Sake/Spark doesn't support full paths
-koreBuildFolder="${scriptRoot/$repoFolder/}"
-koreBuildFolder="${koreBuildFolder#/}"
-
-versionFile="$koreBuildFolder/cli.version"
+versionFile="$scriptRoot/cli.version"
 version=$(<$versionFile)
-sharedRuntimeVersionFile="$koreBuildFolder/shared-runtime.version"
+sharedRuntimeVersionFile="$scriptRoot/shared-runtime.version"
 sharedRuntimeVersion=$(<$sharedRuntimeVersionFile)
 
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=rel-1.0.0
@@ -77,7 +73,7 @@ install_shared_runtime() {
 
     local sharedRuntimePath="$DOTNET_INSTALL_DIR/shared/Microsoft.NETCore.App/$version"
     if [ ! -d "$sharedRuntimePath" ]; then
-        $koreBuildFolder/dotnet/dotnet-install.sh --shared-runtime --channel $channel --version $version
+        $scriptRoot/dotnet/dotnet-install.sh --shared-runtime --channel $channel --version $version
     fi
 }
 
@@ -92,9 +88,9 @@ else
     # requires sudo
     [ -z "$DOTNET_INSTALL_DIR" ] && DOTNET_INSTALL_DIR=~/.dotnet
     export DOTNET_INSTALL_DIR=$DOTNET_INSTALL_DIR
-    chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
+    chmod +x $scriptRoot/dotnet/dotnet-install.sh
 
-    $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
+    $scriptRoot/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
 
     # Add .NET installation directory to the path if it isn't yet included.
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"
@@ -119,13 +115,13 @@ if [ "$NUGET_PACKAGES" == "" ]; then
 fi
 export ReferenceAssemblyRoot=$NUGET_PACKAGES/netframeworkreferenceassemblies/$netfxversion/content
 
-nugetPath="$koreBuildFolder/nuget.exe"
+nugetPath="$scriptRoot/nuget.exe"
 if [ ! -f $nugetPath ]; then
     nugetUrl="https://dist.nuget.org/win-x86-commandline/v4.0.0-rc4/NuGet.exe"
     wget -O $nugetPath $nugetUrl 2>/dev/null || curl -o $nugetPath --location $nugetUrl 2>/dev/null
 fi
 
-makeFileProj="$koreBuildFolder/KoreBuild.proj"
+makeFileProj="$scriptRoot/KoreBuild.proj"
 msbuildArtifactsDir="$repoFolder/artifacts/msbuild"
 msbuildPreflightResponseFile="$msbuildArtifactsDir/msbuild.preflight.rsp"
 msbuildResponseFile="$msbuildArtifactsDir/msbuild.rsp"

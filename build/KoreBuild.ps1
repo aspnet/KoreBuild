@@ -20,14 +20,10 @@ if (!$repoFolder) {
 Write-Host "Building $repoFolder"
 cd $repoFolder
 
-# Make the path relative to the repo root because Sake/Spark doesn't support full paths
-$koreBuildFolder = $PSScriptRoot
-$koreBuildFolder = $koreBuildFolder.Replace($repoFolder, "").TrimStart("\")
-
-$dotnetVersionFile = $koreBuildFolder + "\cli.version"
+$dotnetVersionFile = $PSScriptRoot + "\cli.version"
 $dotnetChannel = "rel-1.0.0"
 $dotnetVersion = Get-Content $dotnetVersionFile
-$sharedRuntimeVersion = Get-Content (Join-Path $koreBuildFolder 'shared-runtime.version')
+$sharedRuntimeVersion = Get-Content (Join-Path $PSScriptRoot 'shared-runtime.version')
 
 if ($env:KOREBUILD_DOTNET_CHANNEL)
 {
@@ -50,7 +46,7 @@ function InstallSharedRuntime([string] $version, [string] $channel)
     # Avoid redownloading the CLI if it's already installed.
     if (!(Test-Path $sharedRuntimePath))
     {
-        & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $channel -SharedRuntime -Version $version -Architecture x64
+        & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $channel -SharedRuntime -Version $version -Architecture x64
     }
 }
 
@@ -64,7 +60,7 @@ if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 else
 {
     # Install the version of dotnet-cli used to compile
-    & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
+    & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
 }
 
 if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
@@ -78,13 +74,13 @@ $sharedPath = (Join-Path (Split-Path ((get-command dotnet.exe).Path) -Parent) "s
 (Get-ChildItem $sharedPath -Recurse *dotnet.exe) | %{ $_.FullName } | Remove-Item;
 
 # We still nuget because dotnet doesn't have support for pushing packages
-$nugetExePath = Join-Path $koreBuildFolder 'nuget.exe'
+$nugetExePath = Join-Path $PSScriptRoot 'nuget.exe'
 if (!(Test-Path $nugetExePath))
 {
-    Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/v4.0.0-rc4/NuGet.exe" -OutFile "$koreBuildFolder/nuget.exe"
+    Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/v4.0.0-rc4/NuGet.exe" -OutFile "$PSScriptRoot/nuget.exe"
 }
 
-$makeFileProj = "$koreBuildFolder/KoreBuild.proj"
+$makeFileProj = "$PSScriptRoot/KoreBuild.proj"
 $msbuildArtifactsDir = "$repoFolder/artifacts/msbuild"
 $msbuildLogFilePath = "$msbuildArtifactsDir/msbuild.log"
 $msBuildResponseFile = "$msbuildArtifactsDir/msbuild.rsp"

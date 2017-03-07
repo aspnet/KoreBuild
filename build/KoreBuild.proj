@@ -53,7 +53,6 @@
   <Import Project="$(RepositoryRoot)build\repo.props" Condition="Exists('$(RepositoryRoot)build\repo.props')" />
 
   <Import Project="targets\KoreBuild.Common.targets" />
-  <Import Project="targets\sake.targets" />
   <Import Project="targets\KoreBuild.SolutionItems.targets" Condition="'$(DisableDefaultItems)' != 'true'" />
   <Import Project="targets\KoreBuild.SolutionBuild.targets" Condition="'$(DisableDefaultTargets)' != 'true'" />
 

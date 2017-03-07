@@ -46,10 +46,6 @@ These are not part of the standard lifecycle but are useful
       RemoveProperties="$(_BuildPropertiesToRemove)" />
   </Target>
 
-  <Target Name="NuGetInstall">
-    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Sake" Properties="SakeTargets=nuget-install;RepositoryRoot=$(RepositoryRoot)" />
-  </Target>
-
 <!--
 ###################################################################
 Individual build steps.
