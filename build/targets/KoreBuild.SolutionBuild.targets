@@ -289,6 +289,7 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
 -->
 
   <PropertyGroup>
+    <VSTestLogger Condition=" '$(VSTestLogger)' == '' AND '$(TEAMCITY_VERSION)' != '' ">trx</VSTestLogger>
     <IgnoreFailingTestProjects>false</IgnoreFailingTestProjects>
     <IgnoreFailingTestProjects Condition="'$(KOREBUILD_IGNORE_DOTNET_TEST_EXIT_CODE)' == '1'">true</IgnoreFailingTestProjects>
   </PropertyGroup>
@@ -311,7 +312,7 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
     <!-- Intentional use of batching ('%') instead of passing items ('@') so that tests fail sooner -->
     <MSBuild Projects="%(_TestProjectItems.Identity)"
       Targets="VSTest"
-      Properties="$(_SolutionProperties);VSTestNoBuild=$(VSTestNoBuild)"
+      Properties="$(_SolutionProperties);VSTestLogger=$(VSTestLogger);VSTestNoBuild=$(VSTestNoBuild)"
       Condition="'@(_TestProjectItems)' != ''"
       ContinueOnError="$(_TestContinueOnError)"
       RemoveProperties="$(_BuildPropertiesToRemove);_TestContinueOnError" />
