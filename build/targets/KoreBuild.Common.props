@@ -5,7 +5,7 @@
       https://docs.travis-ci.com/user/environment-variables/
       https://www.appveyor.com/docs/environment-variables/
     -->
-    <Configuration Condition="'$(Configuration)' == '' AND '$(CI)' == 'true'">Release</Configuration>
+    <Configuration Condition="'$(CI)' == 'true'">Release</Configuration>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <RepositoryRoot Condition="'$(RepositoryRoot)' == ''">$(MSBuildThisFileDirectory)..\..\</RepositoryRoot>
     <RepositoryRoot>$([MSBuild]::EnsureTrailingSlash('$(RepositoryRoot)'))</RepositoryRoot>
