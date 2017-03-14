@@ -62,7 +62,7 @@ version=$(<$versionFile)
 sharedRuntimeVersionFile="$scriptRoot/shared-runtime.version"
 sharedRuntimeVersion=$(<$sharedRuntimeVersionFile)
 
-[ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=rel-1.0.0
+[ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL="preview"
 [ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
 
 install_shared_runtime() {
@@ -96,6 +96,17 @@ else
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"
 fi
 
+# Temporarily install 1.1.1 to prevent build breaks for repos not yet converted
+install_shared_runtime "1.1.1" "release/1.1.0"
+
+# Install shared runtime
+# Example text: 2.0.0-preview1-2399;master
+if [ "$sharedRuntimeVersion" != "" ]; then
+    IFS=';' read -a parts <<< "$sharedRuntimeVersion"
+    ver="${parts[0]}"
+    ch="${parts[1]}"
+    install_shared_runtime $ver $ch
+fi
 
 # workaround for CLI issue: https://github.com/dotnet/cli/issues/2143
 DOTNET_PATH=`which dotnet | head -n 1`

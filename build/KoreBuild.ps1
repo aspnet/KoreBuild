@@ -21,7 +21,7 @@ Write-Host "Building $repoFolder"
 cd $repoFolder
 
 $dotnetVersionFile = $PSScriptRoot + "\cli.version"
-$dotnetChannel = "rel-1.0.0"
+$dotnetChannel = "preview"
 $dotnetVersion = Get-Content $dotnetVersionFile
 $sharedRuntimeVersion = Get-Content (Join-Path $PSScriptRoot 'shared-runtime.version')
 
@@ -67,6 +67,19 @@ if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
 {
     Write-Host "Adding $dotnetLocalInstallFolder to PATH"
     $env:Path = "$newPath"
+}
+
+# Temporarily install 1.1.1 to prevent build breaks for repos not yet converted
+InstallSharedRuntime -version "1.1.1" -channel "release/1.1.0"
+
+# Install shared runtime
+# Example text: 2.0.0-preview1-2399;master
+if ($sharedRuntimeVersion)
+{
+    $parts = $sharedRuntimeVersion.Split(';')
+    $runtime = $parts[0]
+    $channel = $parts[1]
+    InstallSharedRuntime -version $runtime -channel $channel
 }
 
 # wokaround for CLI issue: https://github.com/dotnet/cli/issues/2143
