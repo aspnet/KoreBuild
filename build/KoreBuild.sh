@@ -60,7 +60,7 @@ scriptRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 versionFile="$scriptRoot/cli.version"
 version=$(<$versionFile)
 sharedRuntimeVersionFile="$scriptRoot/shared-runtime.version"
-sharedRuntimeVersion=$(<$sharedRuntimeVersionFile)
+sharedRuntimeVersions=$(<$sharedRuntimeVersionFile)
 
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=rel-1.0.0
 [ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
@@ -96,6 +96,16 @@ else
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"
 fi
 
+# Install shared runtimes
+if [ "$sharedRuntimeVersions" != "" ]
+    IFS=',' read -a parts <<< "$sharedRuntimeVersions"
+    local version=${parts[0]}
+    local channel=${parts[1]}
+    if [ "$channel" == "" ]
+        $channel="master" # default channelf for latest shared runtimes
+    fi
+    install_shared_runtime($version, $channel)
+fi
 
 # workaround for CLI issue: https://github.com/dotnet/cli/issues/2143
 DOTNET_PATH=`which dotnet | head -n 1`
