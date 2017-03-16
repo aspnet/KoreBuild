@@ -160,6 +160,9 @@ $preflightClpOption
 "$makeFileProj"
 ENDMSBUILDPREFLIGHT
 
+# workaround https://github.com/dotnet/core-setup/issues/1664
+echo "{\"sdk\":{\"version\":\"$KOREBUILD_DOTNET_VERSION\"}}" > "$repoFolder/global.json"
+
 __exec dotnet msbuild @"$msbuildPreflightResponseFile"
 
 cat > $msbuildResponseFile <<ENDMSBUILDARGS

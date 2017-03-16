@@ -126,5 +126,7 @@ if (!(Test-Path $msbuildArtifactsDir))
 
 $msBuildArguments | Out-File -Encoding ASCII -FilePath $msBuildResponseFile
 
+# workaround https://github.com/dotnet/core-setup/issues/1664
+@{ sdk = @{ version = $dotnetVersion } } | ConvertTo-Json -Compress | Out-File "$repoFolder/global.json" -Encoding ascii
 exec dotnet msbuild /nologo $preflightClpOption /t:Restore /p:PreflightRestore=true "$makeFileProj"
 exec dotnet msbuild `@"$msBuildResponseFile"
