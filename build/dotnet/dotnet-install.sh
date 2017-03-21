@@ -513,9 +513,9 @@ download() {
 
     local failed=false
     if [ -z "$out_path" ]; then
-        curl --fail -s $remote_path || failed=true
+        curl --fail -sSL $remote_path || failed=true
     else
-        curl --fail -s -o $out_path $remote_path || failed=true
+        curl --fail -sSL -o $out_path $remote_path || failed=true
     fi
 
     if [ "$failed" = true ]; then
