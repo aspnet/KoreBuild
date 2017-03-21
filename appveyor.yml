@@ -1,0 +1,18 @@
+init:
+  - git config --global core.autocrlf true
+branches:
+  only:
+    - master
+    - release
+    - dev
+    - /^(.*\/)?ci-.*$/
+environment:
+  global:
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+    DOTNET_CLI_TELEMETRY_OPTOUT: 1
+build_script:
+  - ps: .\test\build-canary-repo.ps1
+clone_depth: 1
+test: off
+deploy: off
+os: Visual Studio 2017
