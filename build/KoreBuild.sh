@@ -118,6 +118,15 @@ fi
 
 if [ "$(uname)" == "Darwin" ]; then
     ulimit -n 2048
+
+    # Check that OS is 10.12 or newer
+    osx_version="$(sw_vers | grep ProductVersion | awk '{print $2}')"
+    minor_version="$(echo $osx_version | awk -F '.' '{print $2}')"
+    if [ $minor_version -lt 12 ]; then
+        echo -e "${RED}.NET Core 2.0 requires OSX 10.12 or newer. Current version is $osx_version.${RESET}"
+        exit 1
+    fi
+
 fi
 
 netfxversion='4.6.1'
