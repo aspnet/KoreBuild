@@ -512,10 +512,15 @@ download() {
     local out_path=${2:-}
 
     local failed=false
+    # Restart the request up to N times if it fails
+    local retries=3
+    # Give up after 120 seconds of retrying
+    local retry_max_time=120
+
     if [ -z "$out_path" ]; then
-        curl --fail -sSL $remote_path || failed=true
+        curl --fail --retry $retries --retry-max-time $retry_max_time -sSL $remote_path || failed=true
     else
-        curl --fail -sSL -o $out_path $remote_path || failed=true
+        curl --fail --retry $retries --retry-max-time $retry_max_time -sSL -o $out_path $remote_path || failed=true
     fi
 
     if [ "$failed" = true ]; then
