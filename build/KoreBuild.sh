@@ -76,6 +76,8 @@ sharedRuntimeVersion=$(<$sharedRuntimeVersionFile)
 
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL="preview"
 [ -z "$KOREBUILD_DOTNET_VERSION" ] && KOREBUILD_DOTNET_VERSION=$version
+[ -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL" ] && KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL="master"
+[ -z "$KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION" ] && KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION=$sharedRuntimeVersion
 
 install_shared_runtime() {
     eval $invocation
@@ -124,13 +126,8 @@ fi
 # Temporarily install 1.1.1 to prevent build breaks for repos not yet converted
 install_shared_runtime "1.1.1" "release/1.1.0"
 
-# Install shared runtime
-# Example text: 2.0.0-preview1-2399;master
 if [ "$sharedRuntimeVersion" != "" ]; then
-    IFS=';' read -a parts <<< "$sharedRuntimeVersion"
-    ver="${parts[0]}"
-    ch="${parts[1]}"
-    install_shared_runtime $ver $ch
+    install_shared_runtime $KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION $KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL
 fi
 
 # workaround for CLI issue: https://github.com/dotnet/cli/issues/2143

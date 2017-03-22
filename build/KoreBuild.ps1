@@ -23,7 +23,9 @@ cd $repoFolder
 $dotnetVersionFile = $PSScriptRoot + "\cli.version"
 $dotnetChannel = "preview"
 $dotnetVersion = Get-Content $dotnetVersionFile
-$sharedRuntimeVersion = Get-Content (Join-Path $PSScriptRoot 'shared-runtime.version')
+$sharedRuntimeVersionFile = $PSScriptRoot + "\shared-runtime.version"
+$sharedRuntimeChannel = "master"
+$sharedRuntimeVersion = Get-Content $sharedRuntimeVersionFile
 
 if ($env:KOREBUILD_DOTNET_CHANNEL)
 {
@@ -32,6 +34,14 @@ if ($env:KOREBUILD_DOTNET_CHANNEL)
 if ($env:KOREBUILD_DOTNET_VERSION)
 {
     $dotnetVersion = $env:KOREBUILD_DOTNET_VERSION
+}
+if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL)
+{
+    $sharedRuntimeChannel = $env:KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL
+}
+if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION)
+{
+    $sharedRuntimeVersion = $env:KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION
 }
 
 $dotnetLocalInstallFolder = $env:DOTNET_INSTALL_DIR
@@ -72,14 +82,9 @@ if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
 # Temporarily install 1.1.1 to prevent build breaks for repos not yet converted
 InstallSharedRuntime -version "1.1.1" -channel "release/1.1.0"
 
-# Install shared runtime
-# Example text: 2.0.0-preview1-2399;master
 if ($sharedRuntimeVersion)
 {
-    $parts = $sharedRuntimeVersion.Split(';')
-    $runtime = $parts[0]
-    $channel = $parts[1]
-    InstallSharedRuntime -version $runtime -channel $channel
+    InstallSharedRuntime -version $sharedRuntimeVersion -channel $sharedRuntimeChannel
 }
 
 # wokaround for CLI issue: https://github.com/dotnet/cli/issues/2143
