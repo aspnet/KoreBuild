@@ -128,8 +128,8 @@ machine_has() {
 }
 
 check_min_reqs() {
-    if ! machine_has "curl"; then
-        say_err "curl is required to download dotnet. Install curl to proceed."
+    if ! machine_has "curl" && ! machine_has "wget" ; then
+        say_err "curl or wget is required to download dotnet. Install one to proceed."
         return 1
     fi
 
@@ -518,9 +518,13 @@ download() {
     local retry_max_time=120
 
     if [ -z "$out_path" ]; then
-        curl --fail --retry $retries --retry-max-time $retry_max_time -sSL $remote_path || failed=true
+        curl --fail --retry $retries --retry-max-time $retry_max_time -sSL $remote_path \
+            || wget -qO- $remote_path \
+            || failed=true
     else
-        curl --fail --retry $retries --retry-max-time $retry_max_time -sSL -o $out_path $remote_path || failed=true
+        curl --fail --retry $retries --retry-max-time $retry_max_time -sSL -o $out_path $remote_path \
+            || wget -qO $out_path $remote_path \
+            || failed=true
     fi
 
     if [ "$failed" = true ]; then
