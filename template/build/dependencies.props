@@ -9,7 +9,7 @@
         <PackageReference Include="Newtonsoft.Json" Version="$(JsonNetVersion)" />
     -->
     <AspNetCoreVersion>1.2.0-*</AspNetCoreVersion>
-    <JsonNetVersion>9.0.1</JsonNetVersion>
+    <JsonNetVersion>10.0.1</JsonNetVersion>
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
   </PropertyGroup>
 </Project>
