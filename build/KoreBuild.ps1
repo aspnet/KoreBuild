@@ -71,23 +71,23 @@ else
 {
     # Install the version of dotnet-cli used to compile
     & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
+
+    # Temporarily install these runtimes to prevent build breaks for repos not yet converted
+    # 1.0.4 - for tools
+    InstallSharedRuntime -version "1.0.4" -channel "preview"
+    # 1.1.1 - for test projects which haven't yet been converted to netcoreapp2.0
+    InstallSharedRuntime -version "1.1.1" -channel "release/1.1.0"
+
+    if ($sharedRuntimeVersion)
+    {
+        InstallSharedRuntime -version $sharedRuntimeVersion -channel $sharedRuntimeChannel
+    }
 }
 
 if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
 {
     Write-Host "Adding $dotnetLocalInstallFolder to PATH"
     $env:Path = "$newPath"
-}
-
-# Temporarily install these runtimes to prevent build breaks for repos not yet converted
-# 1.0.4 - for tools
-InstallSharedRuntime -version "1.0.4" -channel "preview"
-# 1.1.1 - for test projects which haven't yet been converted to netcoreapp2.0
-InstallSharedRuntime -version "1.1.1" -channel "release/1.1.0"
-
-if ($sharedRuntimeVersion)
-{
-    InstallSharedRuntime -version $sharedRuntimeVersion -channel $sharedRuntimeChannel
 }
 
 # wokaround for CLI issue: https://github.com/dotnet/cli/issues/2143
