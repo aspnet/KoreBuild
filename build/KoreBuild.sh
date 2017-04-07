@@ -121,16 +121,16 @@ else
 
     # Add .NET installation directory to the path if it isn't yet included.
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"
-fi
 
-# Temporarily install these runtimes to prevent build breaks for repos not yet converted
-# 1.0.4 - for tools
-install_shared_runtime "1.0.4" "preview"
-# 1.1.1 - for test projects which haven't yet been converted to netcoreapp2.0
-install_shared_runtime "1.1.1" "release/1.1.0"
+    # Temporarily install these runtimes to prevent build breaks for repos not yet converted
+    # 1.0.4 - for tools
+    install_shared_runtime "1.0.4" "preview"
+    # 1.1.1 - for test projects which haven't yet been converted to netcoreapp2.0
+    install_shared_runtime "1.1.1" "release/1.1.0"
 
-if [ "$sharedRuntimeVersion" != "" ]; then
-    install_shared_runtime $KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION $KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL
+    if [ "$sharedRuntimeVersion" != "" ]; then
+        install_shared_runtime $KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION $KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL
+    fi
 fi
 
 # workaround for CLI issue: https://github.com/dotnet/cli/issues/2143
