@@ -1,0 +1,21 @@
+<Project>
+  <PropertyGroup>
+    <SharedSourcesFolder>$(RepositoryRoot)shared/</SharedSourcesFolder>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Solutions Include="$(RepositoryRoot)*.sln" Exclude="@(ExcludeSolutions)" />
+
+    <ProjectsToPack Include="$(RepositoryRoot)src\*\*.csproj" Exclude="@(ExcludeFromPack)" />
+
+    <SharedSourceDirectories Include="$([System.IO.Directory]::GetDirectories(&quot;$(SharedSourcesFolder)&quot;, '*.Sources'))"
+      Condition="Exists('$(SharedSourcesFolder)')"
+      Exclude="@(ExcludeSharedSourceDirectories)" />
+
+    <!-- put unit test projects ahead of functional tests -->
+    <_FunctionalTests Include="$(RepositoryRoot)test\*\*FunctionalTest*.csproj" Exclude="@(ExcludeFromTest)" />
+    <ProjectsToTest Include="$(RepositoryRoot)test\*\*.csproj" Exclude="@(_FunctionalTests);@(ExcludeFromTest)" />
+    <ProjectsToTest Include="@(_FunctionalTests)"  />
+  </ItemGroup>
+
+</Project>

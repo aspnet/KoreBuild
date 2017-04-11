@@ -1,6 +1,37 @@
 #!/usr/bin/env bash
+set -o pipefail
 
-targets=""
+# Colors
+GREEN="\033[1;32m"
+CYAN="\033[0;36m"
+RESET="\033[0m"
+RED="\033[0;31m"
+
+
+# functions
+
+__exec() {
+    local cmd=$1
+    shift
+
+    local cmdname=$(basename $cmd)
+    echo -e "${CYAN}> $cmdname $@${RESET}"
+
+    if [ -z "${TRAVIS}" ]; then
+        $cmd "$@"
+    else
+        # Work around https://github.com/Microsoft/msbuild/issues/1792
+        $cmd "$@" | tee /dev/null
+    fi
+
+    local exitCode=$?
+    if [ $exitCode -ne 0 ]; then
+        echo -e "${RED}'$cmdname $@' failed with exit code $exitCode${RESET}" 1>&2
+        exit $exitCode
+    fi
+}
+
+msbuild_args=""
 repoFolder=""
 while [[ $# > 0 ]]; do
     case $1 in
@@ -9,15 +40,15 @@ while [[ $# > 0 ]]; do
             repoFolder=$1
             ;;
         *)
-            targets+=" $1"
+            msbuild_args+="\"$1\"\n"
             ;;
     esac
     shift
 done
 if [ ! -e "$repoFolder" ]; then
-    printf "Usage: $filename -r [repoFolder] [ [targets] ]\n\n"
-    echo "       -r [repo]     The repository to build"
-    echo "       [targets]     A space separated list of targets to run"
+    printf "Usage: $filename -r [repoFolder] [ [msbuild-args] ]\n\n"
+    echo "       -r [repo]       The repository to build"
+    echo "       [msbuild-args]  A space separated list of arguments to pass to MSBuild"
     exit 1
 fi
 
@@ -26,13 +57,9 @@ cd $repoFolder
 
 scriptRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Make the path relative to the repo root because Sake/Spark doesn't support full paths
-koreBuildFolder="${scriptRoot/$repoFolder/}"
-koreBuildFolder="${koreBuildFolder#/}"
-
-versionFile="$koreBuildFolder/cli.version"
+versionFile="$scriptRoot/cli.version"
 version=$(<$versionFile)
-sharedRuntimeVersionFile="$koreBuildFolder/shared-runtime.version"
+sharedRuntimeVersionFile="$scriptRoot/shared-runtime.version"
 sharedRuntimeVersion=$(<$sharedRuntimeVersionFile)
 
 [ -z "$KOREBUILD_DOTNET_CHANNEL" ] && KOREBUILD_DOTNET_CHANNEL=rel-1.0.0
@@ -46,7 +73,7 @@ install_shared_runtime() {
 
     local sharedRuntimePath="$DOTNET_INSTALL_DIR/shared/Microsoft.NETCore.App/$version"
     if [ ! -d "$sharedRuntimePath" ]; then
-        $koreBuildFolder/dotnet/dotnet-install.sh --shared-runtime --channel $channel --version $version
+        $scriptRoot/dotnet/dotnet-install.sh --shared-runtime --channel $channel --version $version
     fi
 }
 
@@ -61,14 +88,9 @@ else
     # requires sudo
     [ -z "$DOTNET_INSTALL_DIR" ] && DOTNET_INSTALL_DIR=~/.dotnet
     export DOTNET_INSTALL_DIR=$DOTNET_INSTALL_DIR
-    export KOREBUILD_FOLDER="$(dirname $koreBuildFolder)"
-    chmod +x $koreBuildFolder/dotnet/dotnet-install.sh
+    chmod +x $scriptRoot/dotnet/dotnet-install.sh
 
-    # Install the version of dotnet-cli used to compile
-    $koreBuildFolder/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
-    install_shared_runtime '1.1.0' 'release/1.1.0'
-    install_shared_runtime '1.1.1' 'release/1.1.0'
-    install_shared_runtime '1.0.4' 'preview'
+    $scriptRoot/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
 
     # Add .NET installation directory to the path if it isn't yet included.
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"
@@ -87,29 +109,57 @@ if [ "$(uname)" == "Darwin" ]; then
     ulimit -n 2048
 fi
 
-netfxversion='4.6.0'
-netFrameworkFolder=$repoFolder/$koreBuildFolder/netframeworkreferenceassemblies
-netFrameworkContentDir=$netFrameworkFolder/$netfxversion/content
-sakeFolder=$koreBuildFolder/sake
-if [ ! -d $sakeFolder ]; then
-    toolsProject="$koreBuildFolder/tools.proj"
-    dotnet restore "$toolsProject" --packages $scriptRoot -v Minimal "/p:NetFxVersion=$netfxversion"
-    # Rename the project after restore because we don't want it to be restore afterwards
-    mv "$toolsProject" "$toolsProject.norestore"
+netfxversion='4.6.1'
+if [ "$NUGET_PACKAGES" == "" ]; then
+    NUGET_PACKAGES="$HOME/.nuget/packages"
 fi
+export ReferenceAssemblyRoot=$NUGET_PACKAGES/netframeworkreferenceassemblies/$netfxversion/content
 
-export ReferenceAssemblyRoot=$netFrameworkContentDir
-
-nugetPath="$koreBuildFolder/nuget.exe"
+nugetPath="$scriptRoot/nuget.exe"
 if [ ! -f $nugetPath ]; then
-    nugetUrl="https://dist.nuget.org/win-x86-commandline/v3.5.0-beta2/NuGet.exe"
+    nugetUrl="https://dist.nuget.org/win-x86-commandline/v4.0.0-rc4/NuGet.exe"
     wget -O $nugetPath $nugetUrl 2>/dev/null || curl -o $nugetPath --location $nugetUrl 2>/dev/null
 fi
 
-makeFile="makefile.shade"
-if [ ! -e $makeFile ]; then
-    makeFile="$koreBuildFolder/shade/makefile.shade"
+makeFileProj="$scriptRoot/KoreBuild.proj"
+msbuildArtifactsDir="$repoFolder/artifacts/msbuild"
+msbuildPreflightResponseFile="$msbuildArtifactsDir/msbuild.preflight.rsp"
+msbuildResponseFile="$msbuildArtifactsDir/msbuild.rsp"
+msbuildLogFile="$msbuildArtifactsDir/msbuild.log"
+
+if [ ! -f $msbuildArtifactsDir ]; then
+    mkdir -p $msbuildArtifactsDir
 fi
 
-export KOREBUILD_FOLDER="$koreBuildFolder"
-mono $sakeFolder/0.2.2/tools/Sake.exe -I $koreBuildFolder/shade -f $makeFile $targets
+preflightClpOption='/clp:DisableConsoleColor'
+msbuildClpOption='/clp:DisableConsoleColor;Summary'
+if [ -z "${CI}${APPVEYOR}${TEAMCITY_VERSION}${TRAVIS}" ]; then
+    # Not on any of the CI machines. Fine to use colors.
+    preflightClpOption=''
+    msbuildClpOption='/clp:Summary'
+fi
+
+cat > $msbuildPreflightResponseFile <<ENDMSBUILDPREFLIGHT
+/nologo
+/p:NetFxVersion=$netfxversion
+/p:PreflightRestore=true
+/p:RepositoryRoot="$repoFolder/"
+/t:Restore
+$preflightClpOption
+"$makeFileProj"
+ENDMSBUILDPREFLIGHT
+
+__exec dotnet msbuild @"$msbuildPreflightResponseFile"
+
+cat > $msbuildResponseFile <<ENDMSBUILDARGS
+/nologo
+/m
+/p:RepositoryRoot="$repoFolder/"
+/fl
+/flp:LogFile="$msbuildLogFile";Verbosity=detailed;Encoding=UTF-8
+$msbuildClpOption
+"$makeFileProj"
+ENDMSBUILDARGS
+echo -e "$msbuild_args" >> $msbuildResponseFile
+
+__exec dotnet msbuild @"$msbuildResponseFile"

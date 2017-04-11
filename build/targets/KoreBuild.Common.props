@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      The environment variable 'CI' is set to 'true' by Travis and AppVeyor.
+      https://docs.travis-ci.com/user/environment-variables/
+      https://www.appveyor.com/docs/environment-variables/
+    -->
+    <Configuration Condition="'$(CI)' == 'true'">Release</Configuration>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <RepositoryRoot Condition="'$(RepositoryRoot)' == ''">$(MSBuildThisFileDirectory)..\..\</RepositoryRoot>
+    <RepositoryRoot>$([MSBuild]::EnsureTrailingSlash('$(RepositoryRoot)'))</RepositoryRoot>
+    <ArtifactsDir>$(RepositoryRoot)artifacts\</ArtifactsDir>
+    <BuildDir>$(ArtifactsDir)build\</BuildDir>
+  </PropertyGroup>
+</Project>

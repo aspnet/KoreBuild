@@ -1,5 +1,17 @@
 #requires -version 4
 
+param([parameter(ValueFromRemainingArguments=$true)][string[]] $allparams)
+
+function exec($cmd) {
+    $cmdName = [IO.Path]::GetFileName($cmd)
+    Write-Host -ForegroundColor Cyan "> $cmdName $args"
+    & $cmd @args
+    $exitCode = $LASTEXITCODE
+    if($exitCode -ne 0) {
+        throw "'$cmdName $args' failed with exit code: $exitCode"
+    }
+}
+
 $repoFolder = $env:REPO_FOLDER
 if (!$repoFolder) {
     throw "REPO_FOLDER is not set"
@@ -8,14 +20,10 @@ if (!$repoFolder) {
 Write-Host "Building $repoFolder"
 cd $repoFolder
 
-# Make the path relative to the repo root because Sake/Spark doesn't support full paths
-$koreBuildFolder = $PSScriptRoot
-$koreBuildFolder = $koreBuildFolder.Replace($repoFolder, "").TrimStart("\")
-
-$dotnetVersionFile = $koreBuildFolder + "\cli.version"
+$dotnetVersionFile = $PSScriptRoot + "\cli.version"
 $dotnetChannel = "rel-1.0.0"
 $dotnetVersion = Get-Content $dotnetVersionFile
-$sharedRuntimeVersion = Get-Content (Join-Path $koreBuildFolder 'shared-runtime.version')
+$sharedRuntimeVersion = Get-Content (Join-Path $PSScriptRoot 'shared-runtime.version')
 
 if ($env:KOREBUILD_DOTNET_CHANNEL)
 {
@@ -38,7 +46,7 @@ function InstallSharedRuntime([string] $version, [string] $channel)
     # Avoid redownloading the CLI if it's already installed.
     if (!(Test-Path $sharedRuntimePath))
     {
-        & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $channel -SharedRuntime -Version $version -Architecture x64
+        & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $channel -SharedRuntime -Version $version -Architecture x64
     }
 }
 
@@ -52,26 +60,10 @@ if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 else
 {
     # Install the version of dotnet-cli used to compile
-    & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
-    InstallSharedRuntime '1.1.0' 'release/1.1.0'
+    & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
+}
     InstallSharedRuntime '1.1.1' 'release/1.1.0'
     InstallSharedRuntime '1.0.4' 'preview'
-
-    Write-Host ''
-    Write-Host -ForegroundColor Cyan 'To run tests in Visual Studio, you may need to run this installer:'
-    Write-Host -ForegroundColor Cyan "https://dotnetcli.blob.core.windows.net/dotnet/$sharedRuntimeChannel/Installers/$sharedRuntimeVersion/dotnet-win-x64.$sharedRuntimeVersion.exe"
-    Write-Host ''
-
-    if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION)
-    {
-        $channel = 'master'
-        if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL)
-        {
-            $channel = $env:KOREBUILD_DOTNET_SHARED_RUNTIME_CHANNEL
-        }
-        InstallSharedRuntime $env:KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION $channel
-    }
-}
 if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
 {
     Write-Host "Adding $dotnetLocalInstallFolder to PATH"
@@ -82,34 +74,45 @@ if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
 $sharedPath = (Join-Path (Split-Path ((get-command dotnet.exe).Path) -Parent) "shared");
 (Get-ChildItem $sharedPath -Recurse *dotnet.exe) | %{ $_.FullName } | Remove-Item;
 
-if (!(Test-Path "$koreBuildFolder\Sake"))
+# We still nuget because dotnet doesn't have support for pushing packages
+$nugetExePath = Join-Path $PSScriptRoot 'nuget.exe'
+if (!(Test-Path $nugetExePath))
 {
-    $toolsProject = "$koreBuildFolder\tools.proj"
-    if (!(Test-Path $toolsProject))
-    {
-        if (Test-Path "$toolsProject.norestore")
-        {
-            mv "$toolsProject.norestore" "$toolsProject"
-        }
-        else
-        {
-            throw "Unable to find $toolsProject"
-        }
-    }
-    &dotnet restore "$toolsProject" --packages "$PSScriptRoot" -v Minimal
-    # Rename the project after restore because we don't want it to be restore afterwards
-    mv "$toolsProject" "$toolsProject.norestore"
-    # We still nuget because dotnet doesn't have support for pushing packages
-    Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/v3.5.0-beta2/NuGet.exe" -OutFile "$koreBuildFolder/nuget.exe"
+    Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/v4.0.0-rc4/NuGet.exe" -OutFile "$PSScriptRoot/nuget.exe"
 }
 
-$makeFilePath = "makefile.shade"
-if (!(Test-Path $makeFilePath))
+$makeFileProj = "$PSScriptRoot/KoreBuild.proj"
+$msbuildArtifactsDir = "$repoFolder/artifacts/msbuild"
+$msbuildLogFilePath = "$msbuildArtifactsDir/msbuild.log"
+$msBuildResponseFile = "$msbuildArtifactsDir/msbuild.rsp"
+
+$preflightClpOption='/clp:DisableConsoleColor'
+$msbuildClpOption='/clp:DisableConsoleColor;Summary'
+if ("${env:CI}${env:APPVEYOR}${env:TEAMCITY_VERSION}${env:TRAVIS}" -eq "")
 {
-    $makeFilePath = "$koreBuildFolder\shade\makefile.shade"
+    # Not on any of the CI machines. Fine to use colors.
+    $preflightClpOption=''
+    $msbuildClpOption='/clp:Summary'
 }
 
-Write-Host "Using makefile: $makeFilePath"
+$msBuildArguments = @"
+/nologo
+/m
+/p:RepositoryRoot="$repoFolder/"
+/fl
+/flp:LogFile="$msbuildLogFilePath";Verbosity=detailed;Encoding=UTF-8
+$msbuildClpOption
+"$makeFileProj"
+"@
 
-$env:KOREBUILD_FOLDER=$koreBuildFolder
-&"$koreBuildFolder\Sake\0.2.2\tools\Sake.exe" -I $koreBuildFolder\shade -f $makeFilePath @args
+$allparams | ForEach-Object { $msBuildArguments += "`n`"$_`"" }
+
+if (!(Test-Path $msbuildArtifactsDir))
+{
+    mkdir $msbuildArtifactsDir | Out-Null
+}
+
+$msBuildArguments | Out-File -Encoding ASCII -FilePath $msBuildResponseFile
+
+exec dotnet msbuild /nologo $preflightClpOption /t:Restore /p:PreflightRestore=true "$makeFileProj"
+exec dotnet msbuild `@"$msBuildResponseFile"

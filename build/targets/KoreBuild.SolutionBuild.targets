@@ -1,0 +1,349 @@
+<!--
+FYI: targets, properties, and items that begin with an underscore are meant to be internal.
+     They are subject to change. Overriding these may break these targets.
+-->
+<Project>
+
+  <!-- packages required to implement the targets in this file-->
+  <ItemGroup>
+    <PackageReference Include="NuGetPackageVerifier" Version="1.0.2-*"/>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <PrepareDependsOn>$(PrepareDependsOn);CleanArtifacts;CleanSolutions;_PrepareOutputPaths;ResolveGitInfo</PrepareDependsOn>
+    <CompileDependsOn>$(CompileDependsOn);_CreateCommitHashArtifact;BuildSolutions</CompileDependsOn>
+    <PackageDependsOn>$(PackageDependsOn);PackageProjects;PackSharedSources</PackageDependsOn>
+    <TestDependsOn>$(TestDependsOn);TestProjects</TestDependsOn>
+    <VerifyDependsOn>$(VerifyDependsOn);VerifyPackages</VerifyDependsOn>
+    <CleanDependsOn>$(CleanDependsOn);CleanArtifacts;CleanSolutions</CleanDependsOn>
+    <RebuildDependsOn>$(RebuildDependsOn);RebuildSolutions</RebuildDependsOn>
+  </PropertyGroup>
+
+<!--
+###################################################################
+Convenience targets.
+
+These are not part of the standard lifecycle but are useful
+###################################################################
+-->
+
+  <Target Name="Resx" DependsOnTargets="_ResolveSolutions">
+    <Warning Text="No solutions found to build in '$(RepositoryRoot)'" Condition="'@(_SolutionItems)' == ''" />
+
+    <PropertyGroup>
+      <_ResxTargets>$(MSBuildThisFileDirectory)Project.CSharp.Resx.targets</_ResxTargets>
+      <_ResxSlnProps>$(_SolutionProperties)</_ResxSlnProps>
+      <!-- See comments in Project.CSharp.Resx.targets for what this does-->
+      <_ResxSlnProps>$(_ResxSlnProps);CustomAfterMicrosoftCommonTargets=$(_ResxTargets)</_ResxSlnProps>
+      <_ResxSlnProps>$(_ResxSlnProps);CustomAfterMicrosoftCommonCrossTargetingTargets=$(_ResxTargets)</_ResxSlnProps>
+    </PropertyGroup>
+
+    <MSBuild Targets="_GenerateResx"
+      Projects="@(_SolutionItems)"
+      Properties="$(_ResxSlnProps)"
+      BuildInParallel="$(BuildInParallel)"
+      Condition="'@(_SolutionItems)' != ''"
+      RemoveProperties="$(_BuildPropertiesToRemove)" />
+  </Target>
+
+<!--
+###################################################################
+Individual build steps.
+
+Repos that customize the build should not rely on these existing
+as they are subject to change.
+###################################################################
+-->
+
+  <Target Name="CleanArtifacts">
+    <ItemGroup>
+      <_FilesToDelete Include="$(ArtifactsDir)**\*" Exclude="$(ArtifactsDir)msbuild\**\*" />
+    </ItemGroup>
+    <Delete Files="@(_FilesToDelete)" />
+  </Target>
+
+  <Target Name="_PrepareOutputPaths">
+    <MakeDir Directories="$(ArtifactsDir);$(BuildDir)" />
+  </Target>
+
+  <Target Name="ResolveGitInfo" Condition="'$(CommitHash)' == ''">
+    <PropertyGroup>
+      <CommitHash Condition="'$(APPVEYOR_REPO_COMMIT)' != ''">$(APPVEYOR_REPO_COMMIT)</CommitHash>
+      <GitBranch Condition="'$(APPVEYOR_REPO_BRANCH)' != ''">$(APPVEYOR_REPO_BRANCH)</GitBranch>
+      <CommitHash Condition="'$(TRAVIS_COMMIT)' != ''">$(TRAVIS_COMMIT)</CommitHash>
+      <GitBranch Condition="'$(TRAVIS_BRANCH)' != ''">$(TRAVIS_BRANCH)</GitBranch>
+    </PropertyGroup>
+
+    <GetGitCommitInfo WorkingDirectory="$(RepositoryRoot)"
+                      Condition="'$(CommitHash)' == ''"
+                      ContinueOnError="WarnAndContinue">
+      <Output TaskParameter="CommitHash" PropertyName="CommitHash" />
+      <Output TaskParameter="Branch" PropertyName="GitBranch" />
+    </GetGitCommitInfo>
+  </Target>
+
+  <!-- The filename that will contain the commit hash -->
+  <PropertyGroup>
+    <_CommitArtifactFileName>commit</_CommitArtifactFileName>
+  </PropertyGroup>
+
+  <Target Name="_CreateCommitHashArtifact" DependsOnTargets="_PrepareOutputPaths;ResolveGitInfo">
+    <WriteLinesToFile
+      File="$(ArtifactsDir)$(_CommitArtifactFileName)"
+      Overwrite="true"
+      Lines="$(CommitHash)"
+      Condition="'$(CommitHash)' != ''" />
+  </Target>
+
+<!--
+###################################################################
+Targets: _UseVolatileFeed
+
+Replaces $(RepositoryRoot)\NuGet.config feeds.
+###################################################################
+-->
+  <ItemGroup>
+    <_UpdateFeeds Include="ARTIFACTS" Value="$(NUGET_VOLATILE_FEED_ARTIFACTS)" Condition="'$(NUGET_VOLATILE_FEED_ARTIFACTS)' != ''" />
+    <_UpdateFeeds Include="AspNetCore" Value="$(NUGET_VOLATILE_FEED_AspNetCore)" Condition="'$(NUGET_VOLATILE_FEED_AspNetCore)' != ''" />
+  </ItemGroup>
+
+  <Target Name="_UseVolatileFeed" BeforeTargets="Restore" Condition="'@(_UpdateFeeds)' != '' AND '$(PreflightRestore)' != 'true'">
+    <UpdatePackageSource NuGetConfigPath="$(RepositoryRoot)NuGet.config"
+      SourceName="%(_UpdateFeeds.Identity)"
+      SourceUri="%(_UpdateFeeds.Value)"
+      Condition="'%(_UpdateFeeds.Value)' != ''" />
+  </Target>
+
+<!--
+###################################################################
+Targets: {Target}Solutions
+
+Items: Solutions
+Properties: ExcludeSolutions
+
+Executes /t:{Target} on all solutions
+###################################################################
+-->
+  <PropertyGroup>
+    <_SolutionWasBuilt>false</_SolutionWasBuilt>
+    <!-- ensure its value doesn't invalidate MSBuild build cache -->
+    <_BuildPropertiesToRemove>$(_BuildPropertiesToRemove);_SolutionWasBuilt</_BuildPropertiesToRemove>
+
+    <BuildInParallel>true</BuildInParallel>
+  </PropertyGroup>
+
+  <Target Name="_ResolveSolutions"
+    DependsOnTargets="ResolveGitInfo"
+    Returns="@(_SolutionItems)">
+
+    <RemoveDuplicates Inputs="@(Solutions)">
+      <Output TaskParameter="Filtered" ItemName="_SolutionItems" />
+    </RemoveDuplicates>
+
+    <PropertyGroup>
+      <_SolutionProperties>$(_SolutionProperties);Configuration=$(Configuration)</_SolutionProperties>
+      <_SolutionProperties Condition="'$(BuildNumber)' != ''">$(_SolutionProperties);BuildNumber=$(BuildNumber)</_SolutionProperties>
+      <_SolutionProperties Condition="'$(CommitHash)' != ''">$(_SolutionProperties);CommitHash=$(CommitHash)</_SolutionProperties>
+      <_SolutionProperties Condition="'$(GitBranch)' != ''">$(_SolutionProperties);GitBranch=$(GitBranch)</_SolutionProperties>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="CleanSolutions" DependsOnTargets="_ResolveSolutions">
+
+    <Error Text="No solutions found to build in '$(RepositoryRoot)'" Condition="'@(_SolutionItems)' == ''" />
+
+    <!--
+      Added _SolutionTarget to invalidate subsequent MSBuild calls on the solution.
+      MSBuild incorrectly caches the "Clean" target.
+      TODO remove when upgrading to MSBuild 15.2
+    -->
+    <MSBuild Targets="Clean"
+      Projects="@(_SolutionItems)"
+      Properties="$(_SolutionProperties);_SolutionTarget=Clean"
+      RemoveProperties="$(_BuildPropertiesToRemove)" />
+  </Target>
+
+  <Target Name="BuildSolutions" DependsOnTargets="_ResolveSolutions">
+
+    <Error Text="No solutions found to build in '$(RepositoryRoot)'" Condition="'@(_SolutionItems)' == ''" />
+
+    <MSBuild Targets="Build"
+      Projects="@(_SolutionItems)"
+      Properties="$(_SolutionProperties)"
+      BuildInParallel="$(BuildInParallel)"
+      RemoveProperties="$(_BuildPropertiesToRemove)" />
+
+    <PropertyGroup>
+      <_SolutionWasBuilt>true</_SolutionWasBuilt>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="RebuildSolutions" DependsOnTargets="_ResolveSolutions">
+
+    <Error Text="No solutions found to build in '$(RepositoryRoot)'" Condition="'@(_SolutionItems)' == ''" />
+
+    <MSBuild Targets="Rebuild"
+      Projects="@(_SolutionItems)"
+      Properties="$(_SolutionProperties)"
+      RemoveProperties="$(_BuildPropertiesToRemove)" />
+
+    <PropertyGroup>
+      <_SolutionWasBuilt>true</_SolutionWasBuilt>
+    </PropertyGroup>
+  </Target>
+
+<!--
+###################################################################
+Target: _GetRestoreItemsForSolutions
+
+Extend the main restore entry point to include all projects from
+solutions as well as the current file
+###################################################################
+-->
+  <Target Name="_GetRestoreItemsForSolutions"
+    DependsOnTargets="_ResolveSolutions;_InnerGetRestoreItemsForSolutions"
+    BeforeTargets="_LoadRestoreGraphEntryPoints"
+    Condition=" '$(PreflightRestore)' != 'true' " />
+
+  <!-- _GetRestoreItemsForSolutions ensures @(_SolutionItems) has been set up. -->
+  <Target Name="_InnerGetRestoreItemsForSolutions" Condition=" '@(_SolutionItems)' != '' ">
+    <ItemGroup>
+      <RestoreGraphProjectInputItems Include="$(RestoreGraphProjectInput)" />
+    </ItemGroup>
+
+    <!-- See https://github.com/NuGet/NuGet.Client/blob/0c21be9bad12327e929365bf76808274d4c6fe08/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L139 -->
+    <MSBuild Targets="_LoadRestoreGraphEntryPoints"
+      Projects="@(_SolutionItems)"
+      Properties="$(_SolutionProperties)"
+      RemoveProperties="$(_BuildPropertiesToRemove)" >
+      <Output
+        TaskParameter="TargetOutputs"
+        ItemName="RestoreGraphProjectInputItems" />
+    </MSBuild>
+
+    <ItemGroup>
+      <!-- Ensure subsequent calls to MSBuild include essential properties, like BuildNumber. -->
+      <RestoreGraphProjectInputItems Update="@(RestoreGraphProjectInputItems)">
+        <AdditionalProperties>%(RestoreGraphProjectInputItems.AdditionalProperties);$(_SolutionProperties)</AdditionalProperties>
+      </RestoreGraphProjectInputItems>
+    </ItemGroup>
+  </Target>
+
+<!--
+###################################################################
+Target: PackageProjects
+
+Executes /t:Pack on all projects matching src/*/*.csproj.
+###################################################################
+-->
+  <Target Name="PackageProjects" DependsOnTargets="_ResolveSolutions">
+    <RemoveDuplicates Inputs="@(ProjectsToPack)">
+      <Output TaskParameter="Filtered" ItemName="_PackProjectItems" />
+    </RemoveDuplicates>
+
+    <PropertyGroup>
+      <PackageNoBuild Condition="'$(PackageNoBuild)' == ''">$(_SolutionWasBuilt)</PackageNoBuild>
+    </PropertyGroup>
+
+    <MSBuild Targets="Pack"
+      Projects="@(_PackProjectItems)"
+      Condition="'@(_PackProjectItems)' != ''"
+      Properties="$(_SolutionProperties);PackageOutputPath=$(BuildDir);NoBuild=$(PackageNoBuild)"
+      BuildInParallel="$(BuildInParallel)"
+      RemoveProperties="$(_BuildPropertiesToRemove);PackageNoBuild" />
+  </Target>
+
+<!--
+###################################################################
+Target: PackSharedSources
+
+Creates a content files package for all each directory in
+that matches "$(RepositoryRoot)/shared/*.Sources".
+###################################################################
+-->
+  <Target Name="PackSharedSources" Condition="Exists('$(SharedSourcesFolder)') OR '@(SharedSourceDirectories)' != ''">
+    <RemoveDuplicates Inputs="@(SharedSourceDirectories)">
+      <Output TaskParameter="Filtered" ItemName="_SharedSourceItems" />
+    </RemoveDuplicates>
+
+    <Message Importance="normal"
+      Text="Producing shared source package for %(_SharedSourceItems.Identity)"
+      Condition="'@(_SharedSourceItems)' != ''" />
+
+    <MSBuild Targets="Pack"
+      Projects="$(MSBuildThisFileDirectory)..\shared\sharedsources.csproj"
+      Properties="PackageOutputPath=$(BuildDir);RepositoryRoot=$(RepositoryRoot);NuspecBasePath=%(_SharedSourceItems.Identity);PackageId=%(FileName)%(Extension);BuildNumber=$(BuildNumber)"
+      Condition="'@(_SharedSourceItems)' != ''"
+      BuildInParallel="$(BuildInParallel)" />
+  </Target>
+
+<!--
+###################################################################
+Target: TestProjects
+
+Items: ProjectsToTest. Defaults to test/*/*.csproj
+Properties: ExcludeFromTest. ItemSpec for projects to avoid testing.
+
+Runs the VSTest on all projects in the ProjectsToTest itemgroup.
+###################################################################
+-->
+
+  <PropertyGroup>
+    <VSTestLogger Condition=" '$(VSTestLogger)' == '' AND '$(TEAMCITY_VERSION)' != '' ">trx</VSTestLogger>
+    <IgnoreFailingTestProjects>false</IgnoreFailingTestProjects>
+    <IgnoreFailingTestProjects Condition="'$(KOREBUILD_IGNORE_DOTNET_TEST_EXIT_CODE)' == '1'">true</IgnoreFailingTestProjects>
+  </PropertyGroup>
+
+  <Target Name="TestProjects" DependsOnTargets="_ResolveSolutions">
+    <RemoveDuplicates Inputs="@(ProjectsToTest)">
+      <Output TaskParameter="Filtered" ItemName="_TestProjectItems" />
+    </RemoveDuplicates>
+
+    <Message Text="%0ARunning tests for:%0A@(_TestProjectItems -> '%(FileName)','%0A')%0A"
+      Importance="High"
+      Condition="'@(_TestProjectItems)' != ''" />
+
+    <PropertyGroup>
+    <VSTestNoBuild Condition="'$(VSTestNoBuild)' == ''">$(_SolutionWasBuilt)</VSTestNoBuild>
+      <_TestContinueOnError Condition="'$(IgnoreFailingTestProjects)' == 'true'">ErrorAndContinue</_TestContinueOnError>
+      <_TestContinueOnError Condition="'$(IgnoreFailingTestProjects)' != 'true'">ErrorAndStop</_TestContinueOnError>
+    </PropertyGroup>
+
+    <!-- Intentional use of batching ('%') instead of passing items ('@') so that tests fail sooner -->
+    <MSBuild Projects="%(_TestProjectItems.Identity)"
+      Targets="VSTest"
+      Properties="$(_SolutionProperties);VSTestLogger=$(VSTestLogger);VSTestNoBuild=$(VSTestNoBuild)"
+      Condition="'@(_TestProjectItems)' != ''"
+      ContinueOnError="$(_TestContinueOnError)"
+      RemoveProperties="$(_BuildPropertiesToRemove);_TestContinueOnError" />
+
+  </Target>
+
+<!--
+###################################################################
+Target: VerifyPackages
+
+Runs the NuGet Package Verifier on all nupkgs in build output.
+Only runs if a file named NuGetPackageVerifier.json is in the
+repository root.
+###################################################################
+-->
+  <PropertyGroup>
+    <NuGetVerifierRuleFile>$(RepositoryRoot)NuGetPackageVerifier.json</NuGetVerifierRuleFile>
+  </PropertyGroup>
+
+  <Target Name="VerifyPackages" Condition="Exists('$(NuGetVerifierRuleFile)')">
+    <ItemGroup>
+      <Packages Include="$(BuildDir)*.nupkg" />
+    </ItemGroup>
+
+    <Warning Text="No nupkg found in '$(BuildDir)'." Condition="$(Packages -> Count()) == 0" />
+    <Warning Text="Skipping nuget package verification because artifacts directory could not be found"
+      Condition="!Exists('$(BuildDir)')" />
+
+    <VerifyPackages ArtifactDirectory="$(BuildDir)"
+      RuleFile="$(NuGetVerifierRuleFile)"
+      Condition="Exists('$(BuildDir)')" />
+  </Target>
+
+</Project>
