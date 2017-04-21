@@ -117,7 +117,6 @@ if ("${env:CI}${env:APPVEYOR}${env:TEAMCITY_VERSION}${env:TRAVIS}" -eq "")
 
 $msBuildArguments = @"
 /nologo
-/nowarn:MSB4011
 /m
 /p:RepositoryRoot="$repoFolder/"
 /fl
@@ -137,5 +136,5 @@ $msBuildArguments | Out-File -Encoding ASCII -FilePath $msBuildResponseFile
 
 # workaround https://github.com/dotnet/core-setup/issues/1664
 "{ `"sdk`": { `"version`": `"$dotnetVersion`" } }" | Out-File "$repoFolder/global.json" -Encoding ascii
-exec dotnet msbuild /nologo /nowarn:MSB4011 $preflightClpOption /t:Restore /p:PreflightRestore=true "$makeFileProj"
+exec dotnet msbuild /nologo $preflightClpOption /t:Restore /p:PreflightRestore=true "$makeFileProj"
 exec dotnet msbuild `@"$msBuildResponseFile"

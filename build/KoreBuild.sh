@@ -173,7 +173,6 @@ fi
 
 cat > $msbuildPreflightResponseFile <<ENDMSBUILDPREFLIGHT
 /nologo
-/nowarn:MSB4011
 /p:NetFxVersion=$netfxversion
 /p:PreflightRestore=true
 /p:RepositoryRoot="$repoFolder/"
@@ -189,7 +188,6 @@ __exec dotnet msbuild @"$msbuildPreflightResponseFile"
 
 cat > $msbuildResponseFile <<ENDMSBUILDARGS
 /nologo
-/nowarn:MSB4011
 /m
 /p:RepositoryRoot="$repoFolder/"
 /fl
