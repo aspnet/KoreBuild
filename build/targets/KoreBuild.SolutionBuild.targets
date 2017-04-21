@@ -289,7 +289,9 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
 -->
 
   <PropertyGroup>
-    <VSTestLogger Condition=" '$(VSTestLogger)' == '' AND '$(TEAMCITY_VERSION)' != '' ">trx</VSTestLogger>
+    <VSTestLogger Condition=" '$(VSTestLogger)' == '' AND '$(TEAMCITY_PROJECT_NAME)' != '' ">trx</VSTestLogger>
+    <!-- ensure AppVeyor's auto test reporter remaines enabled -->
+    <VSTestAutoReporters Condition="'$(APPVEYOR_API_URL)' != ''">true</VSTestAutoReporters>
     <IgnoreFailingTestProjects>false</IgnoreFailingTestProjects>
     <IgnoreFailingTestProjects Condition="'$(KOREBUILD_IGNORE_DOTNET_TEST_EXIT_CODE)' == '1'">true</IgnoreFailingTestProjects>
   </PropertyGroup>
@@ -304,7 +306,9 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
       Condition="'@(_TestProjectItems)' != ''" />
 
     <PropertyGroup>
-    <VSTestNoBuild Condition="'$(VSTestNoBuild)' == ''">$(_SolutionWasBuilt)</VSTestNoBuild>
+      <!-- diable other test reporters if trx logging is enabled -->
+      <TestRunSettings Condition=" '$(VSTestLogger)' != '' AND '$(VSTestAutoReporters)' != 'true' ">RunConfiguration.NoAutoReporters=true</TestRunSettings>
+      <VSTestNoBuild Condition="'$(VSTestNoBuild)' == ''">$(_SolutionWasBuilt)</VSTestNoBuild>
       <_TestContinueOnError Condition="'$(IgnoreFailingTestProjects)' == 'true'">ErrorAndContinue</_TestContinueOnError>
       <_TestContinueOnError Condition="'$(IgnoreFailingTestProjects)' != 'true'">ErrorAndStop</_TestContinueOnError>
     </PropertyGroup>
@@ -312,7 +316,7 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
     <!-- Intentional use of batching ('%') instead of passing items ('@') so that tests fail sooner -->
     <MSBuild Projects="%(_TestProjectItems.Identity)"
       Targets="VSTest"
-      Properties="$(_SolutionProperties);VSTestLogger=$(VSTestLogger);VSTestNoBuild=$(VSTestNoBuild)"
+      Properties="$(_SolutionProperties);VSTestLogger=$(VSTestLogger);VSTestNoBuild=$(VSTestNoBuild);VSTestCLIRunSettings=$(TestRunSettings)"
       Condition="'@(_TestProjectItems)' != ''"
       ContinueOnError="$(_TestContinueOnError)"
       RemoveProperties="$(_BuildPropertiesToRemove);_TestContinueOnError" />
