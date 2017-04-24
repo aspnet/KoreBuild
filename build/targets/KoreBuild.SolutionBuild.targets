@@ -306,8 +306,8 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
       Condition="'@(_TestProjectItems)' != ''" />
 
     <PropertyGroup>
-      <!-- diable other test reporters if trx logging is enabled -->
-      <VSTestCLIRunSettings Condition=" '$(VSTestLogger)' != '' AND '$(VSTestAutoReporters)' != 'true' ">RunConfiguration.NoAutoReporters=true;$(VSTestCLIRunSettings)</VSTestCLIRunSettings>
+      <!-- disable other test reporters if trx logging is enabled -->
+      <VSTestCLIRunSettings Condition=" '$(VSTestAutoReporters)' != 'true' ">RunConfiguration.NoAutoReporters=true;$(VSTestCLIRunSettings)</VSTestCLIRunSettings>
       <VSTestNoBuild Condition="'$(VSTestNoBuild)' == ''">$(_SolutionWasBuilt)</VSTestNoBuild>
       <_TestContinueOnError Condition="'$(IgnoreFailingTestProjects)' == 'true'">ErrorAndContinue</_TestContinueOnError>
       <_TestContinueOnError Condition="'$(IgnoreFailingTestProjects)' != 'true'">ErrorAndStop</_TestContinueOnError>
