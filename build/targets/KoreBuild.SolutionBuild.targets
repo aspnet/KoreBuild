@@ -290,8 +290,8 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
 
   <PropertyGroup>
     <VSTestLogger Condition=" '$(VSTestLogger)' == '' AND '$(TEAMCITY_VERSION)' != '' ">trx</VSTestLogger>
-    <!-- ensure AppVeyor's auto test reporter remains enabled -->
-    <VSTestAutoReporters Condition="'$(APPVEYOR_API_URL)' != ''">true</VSTestAutoReporters>
+    <VSTestAutoReporters Condition=" '$(VSTestAutoReporters)' == '' AND '$(VSTestLogger)' != '' ">false</VSTestAutoReporters>
+    <VSTestAutoReporters Condition=" '$(VSTestAutoReporters)' == '' ">true</VSTestAutoReporters>
     <IgnoreFailingTestProjects>false</IgnoreFailingTestProjects>
     <IgnoreFailingTestProjects Condition="'$(KOREBUILD_IGNORE_DOTNET_TEST_EXIT_CODE)' == '1'">true</IgnoreFailingTestProjects>
   </PropertyGroup>
