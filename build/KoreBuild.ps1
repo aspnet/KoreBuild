@@ -57,7 +57,11 @@ function InstallSharedRuntime([string] $version, [string] $channel)
     # Avoid redownloading the CLI if it's already installed.
     if (!(Test-Path $sharedRuntimePath))
     {
-        & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $channel -SharedRuntime -Version $version -Architecture $dotnetArch
+        & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $channel `
+            -SharedRuntime `
+            -Version $version `
+            -Architecture $dotnetArch `
+            -InstallDir $dotnetLocalInstallFolder
     }
 }
 
@@ -71,7 +75,10 @@ if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 else
 {
     # Install the version of dotnet-cli used to compile
-    & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture $dotnetArch
+    & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $dotnetChannel `
+        -Version $dotnetVersion `
+        -Architecture $dotnetArch `
+        -InstallDir $dotnetLocalInstallFolder
 
     # Temporarily install these runtimes to prevent build breaks for repos not yet converted
     # 1.0.4 - for tools
