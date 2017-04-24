@@ -20,6 +20,7 @@ if (!$repoFolder) {
 Write-Host "Building $repoFolder"
 cd $repoFolder
 
+$dotnetArch = 'x64'
 $dotnetVersionFile = $PSScriptRoot + "\cli.version"
 $dotnetChannel = "preview"
 $dotnetVersion = Get-Content $dotnetVersionFile
@@ -47,7 +48,7 @@ if ($env:KOREBUILD_DOTNET_SHARED_RUNTIME_VERSION)
 $dotnetLocalInstallFolder = $env:DOTNET_INSTALL_DIR
 if (!$dotnetLocalInstallFolder)
 {
-    $dotnetLocalInstallFolder = "$env:LOCALAPPDATA\Microsoft\dotnet\"
+    $dotnetLocalInstallFolder = "$env:USERPROFILE\.dotnet\$dotnetArch\"
 }
 
 function InstallSharedRuntime([string] $version, [string] $channel)
@@ -56,7 +57,7 @@ function InstallSharedRuntime([string] $version, [string] $channel)
     # Avoid redownloading the CLI if it's already installed.
     if (!(Test-Path $sharedRuntimePath))
     {
-        & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $channel -SharedRuntime -Version $version -Architecture x64
+        & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $channel -SharedRuntime -Version $version -Architecture $dotnetArch
     }
 }
 
@@ -70,7 +71,7 @@ if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 else
 {
     # Install the version of dotnet-cli used to compile
-    & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
+    & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture $dotnetArch
 
     # Temporarily install these runtimes to prevent build breaks for repos not yet converted
     # 1.0.4 - for tools
