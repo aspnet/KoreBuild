@@ -152,5 +152,5 @@ cat > $msbuildResponseFile <<ENDMSBUILDARGS
 ENDMSBUILDARGS
 echo -e "$msbuild_args" >> $msbuildResponseFile
 
-__exec dotnet msbuild /nologo /t:Restore /p:PreflightRestore=true /p:NetFxVersion=$netfxversion "$makeFileProj"
+__exec dotnet msbuild /nologo /t:Restore /p:PreflightRestore=true /p:NetFxVersion=$netfxversion /p:RepositoryRoot="$repoFolder/" "$makeFileProj"
 __exec dotnet msbuild @"$msbuildResponseFile"

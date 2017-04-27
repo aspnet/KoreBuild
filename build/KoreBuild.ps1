@@ -122,5 +122,5 @@ if (!(Test-Path $msbuildArtifactsDir))
 
 $msBuildArguments | Out-File -Encoding ASCII -FilePath $msBuildResponseFile
 
-exec dotnet msbuild /nologo /t:Restore /p:PreflightRestore=true "$makeFileProj"
+exec dotnet msbuild /nologo /t:Restore /p:PreflightRestore=true /p:RepositoryRoot="$repoFolder/" "$makeFileProj"
 exec dotnet msbuild `@"$msBuildResponseFile"
