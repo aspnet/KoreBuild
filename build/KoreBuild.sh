@@ -16,14 +16,7 @@ __exec() {
 
     local cmdname=$(basename $cmd)
     echo -e "${CYAN}> $cmdname $@${RESET}"
-
-    if [ -z "${TRAVIS}" ]; then
-        $cmd "$@"
-    else
-        # Work around https://github.com/Microsoft/msbuild/issues/1792
-        $cmd "$@" | tee /dev/null
-    fi
-
+    $cmd "$@"
     local exitCode=$?
     if [ $exitCode -ne 0 ]; then
         echo -e "${RED}'$cmdname $@' failed with exit code $exitCode${RESET}" 1>&2
@@ -133,29 +126,14 @@ else
     fi
 fi
 
-# workaround for CLI issue: https://github.com/dotnet/cli/issues/2143
-DOTNET_PATH=`which dotnet | head -n 1`
-ROOT_PATH=`dirname $DOTNET_PATH`
-FOUND=`find $ROOT_PATH/shared -name dotnet`
-if [ ! -z "$FOUND" ]; then
-    echo $FOUND | xargs rm
-fi
-
 netfxversion='4.6.1'
 if [ "$NUGET_PACKAGES" == "" ]; then
     NUGET_PACKAGES="$HOME/.nuget/packages"
 fi
 export ReferenceAssemblyRoot=$NUGET_PACKAGES/netframeworkreferenceassemblies/$netfxversion/content
 
-nugetPath="$scriptRoot/nuget.exe"
-if [ ! -f $nugetPath ]; then
-    nugetUrl="https://dist.nuget.org/win-x86-commandline/v4.0.0-rc4/NuGet.exe"
-    wget -O $nugetPath $nugetUrl 2>/dev/null || curl -o $nugetPath --location $nugetUrl 2>/dev/null
-fi
-
 makeFileProj="$scriptRoot/KoreBuild.proj"
 msbuildArtifactsDir="$repoFolder/artifacts/msbuild"
-msbuildPreflightResponseFile="$msbuildArtifactsDir/msbuild.preflight.rsp"
 msbuildResponseFile="$msbuildArtifactsDir/msbuild.rsp"
 msbuildLogFile="$msbuildArtifactsDir/msbuild.log"
 
@@ -163,38 +141,16 @@ if [ ! -f $msbuildArtifactsDir ]; then
     mkdir -p $msbuildArtifactsDir
 fi
 
-preflightClpOption='/clp:DisableConsoleColor'
-msbuildClpOption='/clp:DisableConsoleColor;Summary'
-if [ -z "${CI}${APPVEYOR}${TEAMCITY_VERSION}${TRAVIS}" ]; then
-    # Not on any of the CI machines. Fine to use colors.
-    preflightClpOption=''
-    msbuildClpOption='/clp:Summary'
-fi
-
-cat > $msbuildPreflightResponseFile <<ENDMSBUILDPREFLIGHT
-/nologo
-/p:NetFxVersion=$netfxversion
-/p:PreflightRestore=true
-/p:RepositoryRoot="$repoFolder/"
-/t:Restore
-$preflightClpOption
-"$makeFileProj"
-ENDMSBUILDPREFLIGHT
-
-# workaround https://github.com/dotnet/core-setup/issues/1664
-echo "{\"sdk\":{\"version\":\"$KOREBUILD_DOTNET_VERSION\"}}" > "$repoFolder/global.json"
-
-__exec dotnet msbuild @"$msbuildPreflightResponseFile"
-
 cat > $msbuildResponseFile <<ENDMSBUILDARGS
 /nologo
 /m
 /p:RepositoryRoot="$repoFolder/"
 /fl
 /flp:LogFile="$msbuildLogFile";Verbosity=detailed;Encoding=UTF-8
-$msbuildClpOption
+/clp:Summary
 "$makeFileProj"
 ENDMSBUILDARGS
 echo -e "$msbuild_args" >> $msbuildResponseFile
 
+__exec dotnet msbuild /nologo /t:Restore /p:PreflightRestore=true /p:NetFxVersion=$netfxversion "$makeFileProj"
 __exec dotnet msbuild @"$msbuildResponseFile"
