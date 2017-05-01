@@ -133,25 +133,11 @@ else
     fi
 fi
 
-# workaround for CLI issue: https://github.com/dotnet/cli/issues/2143
-DOTNET_PATH=`which dotnet | head -n 1`
-ROOT_PATH=`dirname $DOTNET_PATH`
-FOUND=`find $ROOT_PATH/shared -name dotnet`
-if [ ! -z "$FOUND" ]; then
-    echo $FOUND | xargs rm
-fi
-
 netfxversion='4.6.1'
 if [ "$NUGET_PACKAGES" == "" ]; then
     NUGET_PACKAGES="$HOME/.nuget/packages"
 fi
 export ReferenceAssemblyRoot=$NUGET_PACKAGES/netframeworkreferenceassemblies/$netfxversion/content
-
-nugetPath="$scriptRoot/nuget.exe"
-if [ ! -f $nugetPath ]; then
-    nugetUrl="https://dist.nuget.org/win-x86-commandline/v4.0.0-rc4/NuGet.exe"
-    wget -O $nugetPath $nugetUrl 2>/dev/null || curl -o $nugetPath --location $nugetUrl 2>/dev/null
-fi
 
 makeFileProj="$scriptRoot/KoreBuild.proj"
 msbuildArtifactsDir="$repoFolder/artifacts/msbuild"
@@ -180,9 +166,6 @@ cat > $msbuildPreflightResponseFile <<ENDMSBUILDPREFLIGHT
 $preflightClpOption
 "$makeFileProj"
 ENDMSBUILDPREFLIGHT
-
-# workaround https://github.com/dotnet/core-setup/issues/1664
-echo "{\"sdk\":{\"version\":\"$KOREBUILD_DOTNET_VERSION\"}}" > "$repoFolder/global.json"
 
 __exec dotnet msbuild @"$msbuildPreflightResponseFile"
 

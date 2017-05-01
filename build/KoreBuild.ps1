@@ -98,17 +98,6 @@ if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
     $env:Path = "$newPath"
 }
 
-# wokaround for CLI issue: https://github.com/dotnet/cli/issues/2143
-$sharedPath = (Join-Path (Split-Path ((get-command dotnet.exe).Path) -Parent) "shared");
-(Get-ChildItem $sharedPath -Recurse *dotnet.exe) | %{ $_.FullName } | Remove-Item;
-
-# We still nuget because dotnet doesn't have support for pushing packages
-$nugetExePath = Join-Path $PSScriptRoot 'nuget.exe'
-if (!(Test-Path $nugetExePath))
-{
-    Invoke-WebRequest "https://dist.nuget.org/win-x86-commandline/v4.0.0-rc4/NuGet.exe" -OutFile "$PSScriptRoot/nuget.exe"
-}
-
 $makeFileProj = "$PSScriptRoot/KoreBuild.proj"
 $msbuildArtifactsDir = "$repoFolder/artifacts/msbuild"
 $msbuildLogFilePath = "$msbuildArtifactsDir/msbuild.log"
@@ -142,7 +131,5 @@ if (!(Test-Path $msbuildArtifactsDir))
 
 $msBuildArguments | Out-File -Encoding ASCII -FilePath $msBuildResponseFile
 
-# workaround https://github.com/dotnet/core-setup/issues/1664
-"{ `"sdk`": { `"version`": `"$dotnetVersion`" } }" | Out-File "$repoFolder/global.json" -Encoding ascii
 exec dotnet msbuild /nologo $preflightClpOption /t:Restore /p:PreflightRestore=true "$makeFileProj"
 exec dotnet msbuild `@"$msBuildResponseFile"
