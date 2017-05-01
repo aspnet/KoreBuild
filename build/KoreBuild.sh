@@ -16,7 +16,14 @@ __exec() {
 
     local cmdname=$(basename $cmd)
     echo -e "${CYAN}> $cmdname $@${RESET}"
-    $cmd "$@"
+
+    if [ -z "${TRAVIS}" ]; then
+        $cmd "$@"
+    else
+        # Work around https://github.com/Microsoft/msbuild/issues/1792
+        $cmd "$@" | tee /dev/null
+    fi
+
     local exitCode=$?
     if [ $exitCode -ne 0 ]; then
         echo -e "${RED}'$cmdname $@' failed with exit code $exitCode${RESET}" 1>&2
@@ -134,6 +141,7 @@ export ReferenceAssemblyRoot=$NUGET_PACKAGES/netframeworkreferenceassemblies/$ne
 
 makeFileProj="$scriptRoot/KoreBuild.proj"
 msbuildArtifactsDir="$repoFolder/artifacts/msbuild"
+msbuildPreflightResponseFile="$msbuildArtifactsDir/msbuild.preflight.rsp"
 msbuildResponseFile="$msbuildArtifactsDir/msbuild.rsp"
 msbuildLogFile="$msbuildArtifactsDir/msbuild.log"
 
@@ -141,16 +149,35 @@ if [ ! -f $msbuildArtifactsDir ]; then
     mkdir -p $msbuildArtifactsDir
 fi
 
+preflightClpOption='/clp:DisableConsoleColor'
+msbuildClpOption='/clp:DisableConsoleColor;Summary'
+if [ -z "${CI}${APPVEYOR}${TEAMCITY_VERSION}${TRAVIS}" ]; then
+    # Not on any of the CI machines. Fine to use colors.
+    preflightClpOption=''
+    msbuildClpOption='/clp:Summary'
+fi
+
+cat > $msbuildPreflightResponseFile <<ENDMSBUILDPREFLIGHT
+/nologo
+/p:NetFxVersion=$netfxversion
+/p:PreflightRestore=true
+/p:RepositoryRoot="$repoFolder/"
+/t:Restore
+$preflightClpOption
+"$makeFileProj"
+ENDMSBUILDPREFLIGHT
+
+__exec dotnet msbuild @"$msbuildPreflightResponseFile"
+
 cat > $msbuildResponseFile <<ENDMSBUILDARGS
 /nologo
 /m
 /p:RepositoryRoot="$repoFolder/"
 /fl
 /flp:LogFile="$msbuildLogFile";Verbosity=detailed;Encoding=UTF-8
-/clp:Summary
+$msbuildClpOption
 "$makeFileProj"
 ENDMSBUILDARGS
 echo -e "$msbuild_args" >> $msbuildResponseFile
 
-__exec dotnet msbuild /nologo /t:Restore /p:PreflightRestore=true /p:NetFxVersion=$netfxversion /p:RepositoryRoot="$repoFolder/" "$makeFileProj"
 __exec dotnet msbuild @"$msbuildResponseFile"
