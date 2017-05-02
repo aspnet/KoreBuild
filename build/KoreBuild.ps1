@@ -2,7 +2,7 @@
 
 param([parameter(ValueFromRemainingArguments=$true)][string[]] $allparams)
 
-function exec($cmd) {
+function __exec($cmd) {
     $cmdName = [IO.Path]::GetFileName($cmd)
     Write-Host -ForegroundColor Cyan "> $cmdName $args"
     & $cmd @args
@@ -103,14 +103,6 @@ $msbuildArtifactsDir = "$repoFolder/artifacts/msbuild"
 $msbuildLogFilePath = "$msbuildArtifactsDir/msbuild.log"
 $msBuildResponseFile = "$msbuildArtifactsDir/msbuild.rsp"
 
-$preflightClpOption='/clp:DisableConsoleColor'
-$msbuildClpOption='/clp:DisableConsoleColor;Summary'
-if ("${env:CI}${env:APPVEYOR}${env:TEAMCITY_VERSION}${env:TRAVIS}" -eq "")
-{
-    # Not on any of the CI machines. Fine to use colors.
-    $preflightClpOption=''
-    $msbuildClpOption='/clp:Summary'
-}
 
 $msBuildArguments = @"
 /nologo
@@ -118,7 +110,7 @@ $msBuildArguments = @"
 /p:RepositoryRoot="$repoFolder/"
 /fl
 /flp:LogFile="$msbuildLogFilePath";Verbosity=detailed;Encoding=UTF-8
-$msbuildClpOption
+/clp:Summary
 "$makeFileProj"
 "@
 
@@ -131,5 +123,5 @@ if (!(Test-Path $msbuildArtifactsDir))
 
 $msBuildArguments | Out-File -Encoding ASCII -FilePath $msBuildResponseFile
 
-exec dotnet msbuild /nologo $preflightClpOption /t:Restore /p:PreflightRestore=true "$makeFileProj"
-exec dotnet msbuild `@"$msBuildResponseFile"
+__exec dotnet restore /p:PreflightRestore=true "$makeFileProj"
+__exec dotnet msbuild `@"$msBuildResponseFile"
