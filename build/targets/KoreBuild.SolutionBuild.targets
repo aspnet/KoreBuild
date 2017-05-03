@@ -316,7 +316,7 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
     <!-- Intentional use of batching ('%') instead of passing items ('@') so that tests fail sooner -->
     <MSBuild Projects="%(_TestProjectItems.Identity)"
       Targets="VSTest"
-      Properties="$(_SolutionProperties);VSTestLogger=$(VSTestLogger);VSTestNoBuild=$(VSTestNoBuild);VSTestCLIRunSettings=$(VSTestCLIRunSettings.Replace(';', '%3B'))"
+      Properties="$(_SolutionProperties);VSTestLogger=$(VSTestLogger);VSTestNoBuild=$(VSTestNoBuild);VSTestCLIRunSettings=$(VSTestCLIRunSettings.Replace(';', '%3B'));%(_TestProjectItems.AdditionalProperties)"
       Condition="'@(_TestProjectItems)' != ''"
       ContinueOnError="$(_TestContinueOnError)"
       RemoveProperties="$(_BuildPropertiesToRemove);_TestContinueOnError" />
