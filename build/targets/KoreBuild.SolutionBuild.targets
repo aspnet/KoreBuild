@@ -152,9 +152,13 @@ Executes /t:{Target} on all solutions
 
     <Error Text="No solutions found to build in '$(RepositoryRoot)'" Condition="'@(_SolutionItems)' == ''" />
 
+    <!--
+      Added _SolutionTarget to invalidate subsequent MSBuild calls on the solution.
+      MSBuild incorrectly caches the "Clean" target.
+    -->
     <MSBuild Targets="Clean"
       Projects="@(_SolutionItems)"
-      Properties="$(_SolutionProperties)"
+      Properties="$(_SolutionProperties);_SolutionTarget=Clean"
       RemoveProperties="$(_BuildPropertiesToRemove)" />
   </Target>
 
