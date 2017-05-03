@@ -12,7 +12,7 @@
       These properties include those that could interfere with inner builds
       or could result in an unnecessary build cache miss.
     -->
-    <_BuildPropertiesToRemove>$(_BuildPropertiesToRemove);TargetFramework;TargetFrameworks;RestoreGraphProjectInput;_InvalidConfigurationWarn;_InvalidConfigurationError</_BuildPropertiesToRemove>
+    <_BuildPropertiesToRemove>$(_BuildPropertiesToRemove);RestoreGraphProjectInput;_InvalidConfigurationWarn;_InvalidConfigurationError</_BuildPropertiesToRemove>
 
     <!--
       Extend the restore step to include multiple projects.
