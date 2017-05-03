@@ -152,14 +152,9 @@ Executes /t:{Target} on all solutions
 
     <Error Text="No solutions found to build in '$(RepositoryRoot)'" Condition="'@(_SolutionItems)' == ''" />
 
-    <!--
-      Added _SolutionTarget to invalidate subsequent MSBuild calls on the solution.
-      MSBuild incorrectly caches the "Clean" target.
-      TODO remove when upgrading to MSBuild 15.2
-    -->
     <MSBuild Targets="Clean"
       Projects="@(_SolutionItems)"
-      Properties="$(_SolutionProperties);_SolutionTarget=Clean"
+      Properties="$(_SolutionProperties)"
       RemoveProperties="$(_BuildPropertiesToRemove)" />
   </Target>
 
@@ -316,10 +311,10 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
     <!-- Intentional use of batching ('%') instead of passing items ('@') so that tests fail sooner -->
     <MSBuild Projects="%(_TestProjectItems.Identity)"
       Targets="VSTest"
-      Properties="$(_SolutionProperties);VSTestLogger=$(VSTestLogger);VSTestNoBuild=$(VSTestNoBuild);VSTestCLIRunSettings=$(VSTestCLIRunSettings.Replace(';', '%3B'))"
+      Properties="$(_SolutionProperties);VSTestLogger=$(VSTestLogger);VSTestNoBuild=$(VSTestNoBuild);VSTestCLIRunSettings=$(VSTestCLIRunSettings.Replace(';', '%3B'));%(_TestProjectItems.AdditionalProperties)"
       Condition="'@(_TestProjectItems)' != ''"
       ContinueOnError="$(_TestContinueOnError)"
-      RemoveProperties="$(_BuildPropertiesToRemove);_TestContinueOnError" />
+      RemoveProperties="$(_BuildPropertiesToRemove)" />
 
   </Target>
 
