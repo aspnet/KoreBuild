@@ -74,12 +74,6 @@ if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 }
 else
 {
-    # Install the version of dotnet-cli used to compile
-    & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $dotnetChannel `
-        -Version $dotnetVersion `
-        -Architecture $dotnetArch `
-        -InstallDir $dotnetLocalInstallFolder
-
     # Temporarily install these runtimes to prevent build breaks for repos not yet converted
     # 1.0.4 - for tools
     InstallSharedRuntime -version "1.0.4" -channel "preview"
@@ -90,6 +84,12 @@ else
     {
         InstallSharedRuntime -version $sharedRuntimeVersion -channel $sharedRuntimeChannel
     }
+
+    # Install the version of dotnet-cli used to compile
+    & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $dotnetChannel `
+        -Version $dotnetVersion `
+        -Architecture $dotnetArch `
+        -InstallDir $dotnetLocalInstallFolder
 }
 
 if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
