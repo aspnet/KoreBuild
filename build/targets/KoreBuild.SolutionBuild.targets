@@ -305,8 +305,11 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
       Condition="'@(_TestProjectItems)' != ''" />
 
     <PropertyGroup>
-      <!-- disable other test reporters if trx logging is enabled -->
-      <VSTestCLIRunSettings Condition=" '$(VSTestAutoReporters)' != 'true' ">RunConfiguration.NoAutoReporters=true;$(VSTestCLIRunSettings)</VSTestCLIRunSettings>
+      <!--
+        Disable other test reporters if trx logging is enabled.
+        VSTestCLIRunSettings is a space-separated list of key=value pairs.
+      -->
+      <VSTestCLIRunSettings Condition=" '$(VSTestAutoReporters)' != 'true' ">RunConfiguration.NoAutoReporters=true $(VSTestCLIRunSettings)</VSTestCLIRunSettings>
       <VSTestNoBuild Condition="'$(VSTestNoBuild)' == ''">$(_SolutionWasBuilt)</VSTestNoBuild>
       <_TestContinueOnError Condition="'$(IgnoreFailingTestProjects)' == 'true'">ErrorAndContinue</_TestContinueOnError>
       <_TestContinueOnError Condition="'$(IgnoreFailingTestProjects)' != 'true'">ErrorAndStop</_TestContinueOnError>
@@ -315,7 +318,7 @@ Runs the VSTest on all projects in the ProjectsToTest itemgroup.
     <!-- Intentional use of batching ('%') instead of passing items ('@') so that tests fail sooner -->
     <MSBuild Projects="%(_TestProjectItems.Identity)"
       Targets="VSTest"
-      Properties="$(_SolutionProperties);VSTestLogger=$(VSTestLogger);VSTestNoBuild=$(VSTestNoBuild);VSTestCLIRunSettings=$(VSTestCLIRunSettings.Replace(';', '%3B'));%(_TestProjectItems.AdditionalProperties)"
+      Properties="$(_SolutionProperties);VSTestLogger=$(VSTestLogger);VSTestNoBuild=$(VSTestNoBuild);VSTestCLIRunSettings=$([MSBuild]::Escape('$(VSTestCLIRunSettings)'));%(_TestProjectItems.AdditionalProperties)"
       Condition="'@(_TestProjectItems)' != ''"
       ContinueOnError="$(_TestContinueOnError)"
       RemoveProperties="$(_BuildPropertiesToRemove)" />
