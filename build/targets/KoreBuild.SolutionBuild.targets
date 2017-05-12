@@ -6,7 +6,7 @@ FYI: targets, properties, and items that begin with an underscore are meant to b
 
   <!-- packages required to implement the targets in this file-->
   <ItemGroup>
-    <PackageReference Include="NuGetPackageVerifier" Version="1.0.2-*"/>
+    <PackageReference Include="NuGetPackageVerifier" Version="2.0.0-*"/>
   </ItemGroup>
 
   <PropertyGroup>
