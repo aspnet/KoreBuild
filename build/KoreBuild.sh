@@ -153,3 +153,10 @@ echo -e "$msbuild_args" >> $msbuildResponseFile
 
 __exec dotnet restore /p:PreflightRestore=true /p:NetFxVersion=$netfxversion "$makeFileProj"
 __exec dotnet msbuild @"$msbuildResponseFile"
+
+if [ "$KOREBUILD_WRITE_STRUCTURED_LOG" == "true" ]; then
+    structuredLoggerVersion=$(dotnet build $makeFileProj /t:GetStructuredLoggerVersion /p:DisableDefaultTargets=true | grep "\!StructuredLoggerVersion" | sed 's/ *!StructuredLoggerVersion:\([^!]*\)!/\1/g')
+    structuredLogFile=${msbuildLogFile//.binlog/.buildlog}
+    structuredLoggerPath=$HOME/.nuget/packages/microsoft.build.logging.structuredlogger/$structuredLoggerVersion/lib/netstandard1.5/StructuredLogger.dll
+    __exec dotnet msbuild $msbuildLogFile /noconlog /logger:"StructuredLogger,$structuredLoggerPath;$structuredLogFile" /noautoresponse
+fi

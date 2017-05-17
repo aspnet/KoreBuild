@@ -6,6 +6,8 @@
     -->
     <TargetFramework>netcoreapp1.0</TargetFramework>
 
+    <StructuredLoggerVersion>1.0.130</StructuredLoggerVersion>
+
     <!--
       We want to ensure these properties do not flow into sub-builds.
       This group of properties should be specified in RemoveProperties when an MSBuild task is used.
@@ -35,6 +37,10 @@
       environment variable to compile for .NET Framework on xplat without installing Mono.
     -->
     <PackageReference Include="NETFrameworkReferenceAssemblies" Version="$(NetFxVersion)" Condition="'$(NetFxVersion)'!=''" />
+
+    <!-- MSBuild Structured Logger, which we use to optimize the binary log at the end (optionally) -->
+    <PackageReference Include="Microsoft.Build.Logging.StructuredLogger" Version="$(StructuredLoggerVersion)" />
+
     <!-- Additional package references required to make other targets work should be kept in the files where those targets are defined -->
   </ItemGroup>
 
@@ -55,6 +61,7 @@
   <Import Project="targets\KoreBuild.Common.targets" />
   <Import Project="targets\KoreBuild.SolutionItems.targets" Condition="'$(DisableDefaultItems)' != 'true'" />
   <Import Project="targets\KoreBuild.SolutionBuild.targets" Condition="'$(DisableDefaultTargets)' != 'true'" />
+  <Import Project="targets\KoreBuild.StructuredLogging.targets" />
 
   <Import Project="$(RepositoryRoot)build\repo.targets" Condition="Exists('$(RepositoryRoot)build\repo.targets')" />
 </Project>
