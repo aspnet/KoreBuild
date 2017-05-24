@@ -89,6 +89,25 @@ function Say-Invocation($Invocation) {
     Say-Verbose "$command $args"
 }
 
+function Invoke-With-Retry([ScriptBlock]$ScriptBlock, [int]$MaxAttempts = 3, [int]$SecondsBetweenAttempts = 1) {
+    $Attempts = 0
+
+    while ($true) {
+        try {
+            return $ScriptBlock.Invoke()
+        }
+        catch {
+            $Attempts++
+            if ($Attempts -lt $MaxAttempts) {
+                Start-Sleep $SecondsBetweenAttempts
+            }
+            else {
+                throw
+            }
+        }
+    }
+}
+
 function Get-Machine-Architecture() {
     Say-Invocation $MyInvocation
 
@@ -131,42 +150,45 @@ function Load-Assembly([string] $Assembly) {
 
 function GetHTTPResponse([Uri] $Uri)
 {
-    $HttpClient = $null
+    Invoke-With-Retry(
+    {
+        $HttpClient = $null
 
-    try {
-        # HttpClient is used vs Invoke-WebRequest in order to support Nano Server which doesn't support the Invoke-WebRequest cmdlet.
-        Load-Assembly -Assembly System.Net.Http
-        if($ProxyAddress){
-            $HttpClientHandler = New-Object System.Net.Http.HttpClientHandler
-            $HttpClientHandler.Proxy =  New-Object System.Net.WebProxy -Property @{Address=$ProxyAddress}
-            $HttpClient = New-Object System.Net.Http.HttpClient -ArgumentList $HttpClientHandler
-        }
-        else {
-            $HttpClient = New-Object System.Net.Http.HttpClient
-        }
-
-        # Default timeout for HttpClient is 100s.  For a 50 MB download this assumes 500 KB/s average, any less will time out
-        # 5 minutes allows it to work over much slower connections.
-        $HttpClient.Timeout = New-TimeSpan -Minutes 5
-        $Response = $HttpClient.GetAsync($Uri).Result
-        if (($Response -eq $null) -or (-not ($Response.IsSuccessStatusCode)))
-        {
-            $ErrorMsg = "Failed to download $Uri."
-            if ($Response -ne $null)
-            {
-                $ErrorMsg += "  $Response"
+        try {
+            # HttpClient is used vs Invoke-WebRequest in order to support Nano Server which doesn't support the Invoke-WebRequest cmdlet.
+            Load-Assembly -Assembly System.Net.Http
+            if($ProxyAddress){
+                $HttpClientHandler = New-Object System.Net.Http.HttpClientHandler
+                $HttpClientHandler.Proxy =  New-Object System.Net.WebProxy -Property @{Address=$ProxyAddress}
+                $HttpClient = New-Object System.Net.Http.HttpClient -ArgumentList $HttpClientHandler
+            }
+            else {
+                $HttpClient = New-Object System.Net.Http.HttpClient
             }
 
-            throw $ErrorMsg
-        }
+            # Default timeout for HttpClient is 100s.  For a 50 MB download this assumes 500 KB/s average, any less will time out
+            # 5 minutes allows it to work over much slower connections.
+            $HttpClient.Timeout = New-TimeSpan -Minutes 5
+            $Response = $HttpClient.GetAsync($Uri).Result
+            if (($Response -eq $null) -or (-not ($Response.IsSuccessStatusCode)))
+            {
+                $ErrorMsg = "Failed to download $Uri."
+                if ($Response -ne $null)
+                {
+                    $ErrorMsg += "  $Response"
+                }
 
-        return $Response
-    }
-    finally {
-        if ($HttpClient -ne $null) {
-            $HttpClient.Dispose()
+                throw $ErrorMsg
+            }
+
+            return $Response
         }
-    }
+        finally {
+            if ($HttpClient -ne $null) {
+                $HttpClient.Dispose()
+            }
+        }
+    })
 }
 
 
