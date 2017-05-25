@@ -80,8 +80,8 @@ else
     # Temporarily install these runtimes to prevent build breaks for repos not yet converted
     # 1.0.4 - for tools
     InstallSharedRuntime -version "1.0.4" -channel "preview"
-    # 1.1.1 - for test projects which haven't yet been converted to netcoreapp2.0
-    InstallSharedRuntime -version "1.1.1" -channel "release/1.1.0"
+    # 1.1.2 - for test projects which haven't yet been converted to netcoreapp2.0
+    InstallSharedRuntime -version "1.1.2" -channel "release/1.1.0"
 
     if ($sharedRuntimeVersion)
     {
