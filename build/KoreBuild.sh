@@ -105,9 +105,9 @@ else
     chmod +x $scriptRoot/dotnet/dotnet-install.sh
 
     # Temporarily install these runtimes to prevent build breaks for repos not yet converted
-    # 1.0.4 - for tools
+    # 1.0.5 - for tools
     install_shared_runtime "1.0.4" "preview"
-    # 1.1.1 - for test projects which haven't yet been converted to netcoreapp2.0
+    # 1.1.2 - for test projects which haven't yet been converted to netcoreapp2.0
     install_shared_runtime "1.1.1" "release/1.1.0"
 
     if [ "$sharedRuntimeVersion" != "" ]; then
