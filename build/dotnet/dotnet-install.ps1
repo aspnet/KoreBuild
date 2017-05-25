@@ -10,18 +10,14 @@
     Installs dotnet cli. If dotnet installation already exists in the given directory
     it will update it only if the requested version differs from the one already installed.
 .PARAMETER Channel
-    Default: preview
-    Channel is the way of reasoning about stability and quality of dotnet. This parameter takes one of the values:
-    - future - Possibly unstable, frequently changing, may contain new finished and unfinished features
-    - preview - Pre-release stable with known issues and feature gaps
-    - production - Most stable releases
+    Default: release/1.0.0
+    Download from the Channel specified
 .PARAMETER Version
     Default: latest
     Represents a build version on specific channel. Possible values:
-    - 4-part version in a format A.B.C.D - represents specific version of build
     - latest - most latest build on specific channel
-    - lkg - last known good version on specific channel
-    Note: LKG work is in progress. Once the work is finished, this will become new default
+    - 3-part version in a format A.B.C - represents specific version of build
+      examples: 2.0.0-preview2-006120; 1.1.0
 .PARAMETER InstallDir
     Default: %LocalAppData%\Microsoft\dotnet
     Path to where to install dotnet. Note that binaries will be placed directly in a given directory.
@@ -46,13 +42,20 @@
     Displays diagnostics information.
 .PARAMETER AzureFeed
     Default: https://dotnetcli.azureedge.net/dotnet
-    This parameter should not be usually changed by user. It allows to change URL for the Azure feed used by this installer.
+    This parameter typically is not changed by the user.
+    It allows to change URL for the Azure feed used by this installer.
+.PARAMETER UncachedFeed
+    This parameter typically is not changed by the user.
+    It allows to change URL for the Uncached feed used by this installer.
 .PARAMETER ProxyAddress
     If set, the installer will use the proxy when making web requests
+.PARAMETER ProxyUseDefaultCredentials
+    Default: false
+    Use default credentials, when using proxy address.
 #>
 [cmdletbinding()]
 param(
-   [string]$Channel="rel-1.0.0",
+   [string]$Channel="release/1.0.0",
    [string]$Version="Latest",
    [string]$InstallDir="<auto>",
    [string]$Architecture="<auto>",
@@ -62,7 +65,8 @@ param(
    [switch]$NoPath,
    [string]$AzureFeed="https://dotnetcli.azureedge.net/dotnet",
    [string]$UncachedFeed="https://dotnetcli.blob.core.windows.net/dotnet",
-   [string]$ProxyAddress
+   [string]$ProxyAddress,
+   [switch]$ProxyUseDefaultCredentials
 )
 
 Set-StrictMode -Version Latest
@@ -87,25 +91,6 @@ function Say-Invocation($Invocation) {
     $command = $Invocation.MyCommand;
     $args = (($Invocation.BoundParameters.Keys | foreach { "-$_ `"$($Invocation.BoundParameters[$_])`"" }) -join " ")
     Say-Verbose "$command $args"
-}
-
-function Invoke-With-Retry([ScriptBlock]$ScriptBlock, [int]$MaxAttempts = 3, [int]$SecondsBetweenAttempts = 1) {
-    $Attempts = 0
-
-    while ($true) {
-        try {
-            return $ScriptBlock.Invoke()
-        }
-        catch {
-            $Attempts++
-            if ($Attempts -lt $MaxAttempts) {
-                Start-Sleep $SecondsBetweenAttempts
-            }
-            else {
-                throw
-            }
-        }
-    }
 }
 
 function Get-Machine-Architecture() {
@@ -150,65 +135,73 @@ function Load-Assembly([string] $Assembly) {
 
 function GetHTTPResponse([Uri] $Uri)
 {
-    Invoke-With-Retry(
-    {
-        $HttpClient = $null
+    $HttpClient = $null
 
-        try {
-            # HttpClient is used vs Invoke-WebRequest in order to support Nano Server which doesn't support the Invoke-WebRequest cmdlet.
-            Load-Assembly -Assembly System.Net.Http
-            if($ProxyAddress){
-                $HttpClientHandler = New-Object System.Net.Http.HttpClientHandler
-                $HttpClientHandler.Proxy =  New-Object System.Net.WebProxy -Property @{Address=$ProxyAddress}
-                $HttpClient = New-Object System.Net.Http.HttpClient -ArgumentList $HttpClientHandler
-            }
-            else {
-                $HttpClient = New-Object System.Net.Http.HttpClient
-            }
+    try {
+        # HttpClient is used vs Invoke-WebRequest in order to support Nano Server which doesn't support the Invoke-WebRequest cmdlet.
+        Load-Assembly -Assembly System.Net.Http
 
-            # Default timeout for HttpClient is 100s.  For a 50 MB download this assumes 500 KB/s average, any less will time out
-            # 5 minutes allows it to work over much slower connections.
-            $HttpClient.Timeout = New-TimeSpan -Minutes 5
-            $Response = $HttpClient.GetAsync($Uri).Result
-            if (($Response -eq $null) -or (-not ($Response.IsSuccessStatusCode)))
+        if(-not $ProxyAddress)
+        {
+            # Despite no proxy being explicitly specified, we may still be behind a default proxy
+            $DefaultProxy = [System.Net.WebRequest]::DefaultWebProxy;
+            if($DefaultProxy -and (-not $DefaultProxy.IsBypassed($Uri))){
+                $ProxyAddress =  $DefaultProxy.GetProxy($Uri).OriginalString
+                $ProxyUseDefaultCredentials = $true
+            }
+        }
+
+        if($ProxyAddress){
+            $HttpClientHandler = New-Object System.Net.Http.HttpClientHandler
+            $HttpClientHandler.Proxy =  New-Object System.Net.WebProxy -Property @{Address=$ProxyAddress;UseDefaultCredentials=$ProxyUseDefaultCredentials}
+            $HttpClient = New-Object System.Net.Http.HttpClient -ArgumentList $HttpClientHandler
+        } 
+        else {
+            $HttpClient = New-Object System.Net.Http.HttpClient
+        }
+        # Default timeout for HttpClient is 100s.  For a 50 MB download this assumes 500 KB/s average, any less will time out
+        # 10 minutes allows it to work over much slower connections.
+        $HttpClient.Timeout = New-TimeSpan -Minutes 10
+        $Response = $HttpClient.GetAsync($Uri).Result
+        if (($Response -eq $null) -or (-not ($Response.IsSuccessStatusCode)))
+        {
+            $ErrorMsg = "Failed to download $Uri."
+            if ($Response -ne $null)
             {
-                $ErrorMsg = "Failed to download $Uri."
-                if ($Response -ne $null)
-                {
-                    $ErrorMsg += "  $Response"
-                }
-
-                throw $ErrorMsg
+                $ErrorMsg += "  $Response"
             }
 
-            return $Response
+            throw $ErrorMsg
         }
-        finally {
-            if ($HttpClient -ne $null) {
-                $HttpClient.Dispose()
-            }
+
+        return $Response
+    }
+    finally {
+        if ($HttpClient -ne $null) {
+            $HttpClient.Dispose()
         }
-    })
+    }
 }
 
 
-function Get-Latest-Version-Info([string]$AzureFeed, [string]$AzureChannel, [string]$CLIArchitecture) {
+function Get-Latest-Version-Info([string]$AzureFeed, [string]$Channel) {
     Say-Invocation $MyInvocation
 
     $VersionFileUrl = $null
     if ($SharedRuntime) {
-        $VersionFileUrl = "$UncachedFeed/$AzureChannel/dnvm/latest.sharedfx.win.$CLIArchitecture.version"
+        $VersionFileUrl = "$UncachedFeed/Runtime/$Channel/latest.version"
     }
     else {
-        $VersionFileUrl = "$UncachedFeed/Sdk/$AzureChannel/latest.version"
+        $VersionFileUrl = "$UncachedFeed/Sdk/$Channel/latest.version"
     }
-
+    
     $Response = GetHTTPResponse -Uri $VersionFileUrl
     $StringContent = $Response.Content.ReadAsStringAsync().Result
 
     switch ($Response.Content.Headers.ContentType) {
         { ($_ -eq "application/octet-stream") } { $VersionText = [Text.Encoding]::UTF8.GetString($StringContent) }
         { ($_ -eq "text/plain") } { $VersionText = $StringContent }
+        { ($_ -eq "text/plain; charset=UTF-8") } { $VersionText = $StringContent }
         default { throw "``$Response.Content.Headers.ContentType`` is an unknown .version file content type." }
     }
 
@@ -217,38 +210,26 @@ function Get-Latest-Version-Info([string]$AzureFeed, [string]$AzureChannel, [str
     return $VersionInfo
 }
 
-# TODO: AzureChannel and Channel should be unified
-function Get-Azure-Channel-From-Channel([string]$Channel) {
-    Say-Invocation $MyInvocation
 
-    # For compatibility with build scripts accept also directly Azure channels names
-    switch ($Channel.ToLower()) {
-        { ($_ -eq "future") -or ($_ -eq "dev") } { return "dev" }
-        { $_ -eq "production" } { throw "Production channel does not exist yet" }
-        default { return $_ }
-    }
-}
-
-function Get-Specific-Version-From-Version([string]$AzureFeed, [string]$AzureChannel, [string]$CLIArchitecture, [string]$Version) {
+function Get-Specific-Version-From-Version([string]$AzureFeed, [string]$Channel, [string]$Version) {
     Say-Invocation $MyInvocation
 
     switch ($Version.ToLower()) {
         { $_ -eq "latest" } {
-            $LatestVersionInfo = Get-Latest-Version-Info -AzureFeed $AzureFeed -AzureChannel $AzureChannel -CLIArchitecture $CLIArchitecture
+            $LatestVersionInfo = Get-Latest-Version-Info -AzureFeed $AzureFeed -Channel $Channel
             return $LatestVersionInfo.Version
         }
-        { $_ -eq "lkg" } { throw "``-Version LKG`` not supported yet." }
         default { return $Version }
     }
 }
 
-function Get-Download-Links([string]$AzureFeed, [string]$AzureChannel, [string]$SpecificVersion, [string]$CLIArchitecture) {
+function Get-Download-Links([string]$AzureFeed, [string]$Channel, [string]$SpecificVersion, [string]$CLIArchitecture) {
     Say-Invocation $MyInvocation
-
+    
     $ret = @()
-
+    
     if ($SharedRuntime) {
-        $PayloadURL = "$AzureFeed/$AzureChannel/Binaries/$SpecificVersion/dotnet-win-$CLIArchitecture.$SpecificVersion.zip"
+        $PayloadURL = "$AzureFeed/Runtime/$SpecificVersion/dotnet-win-$CLIArchitecture.$SpecificVersion.zip"
     }
     else {
         $PayloadURL = "$AzureFeed/Sdk/$SpecificVersion/dotnet-dev-win-$CLIArchitecture.$SpecificVersion.zip"
@@ -284,7 +265,7 @@ function Get-Version-Info-From-Version-File([string]$InstallRoot, [string]$Relat
 
     $VersionFile = Join-Path -Path $InstallRoot -ChildPath $RelativePathToVersionFile
     Say-Verbose "Local version file: $VersionFile"
-
+    
     if (Test-Path $VersionFile) {
         $VersionText = cat $VersionFile
         Say-Verbose "Local version file text: $VersionText"
@@ -298,7 +279,7 @@ function Get-Version-Info-From-Version-File([string]$InstallRoot, [string]$Relat
 
 function Is-Dotnet-Package-Installed([string]$InstallRoot, [string]$RelativePathToPackage, [string]$SpecificVersion) {
     Say-Invocation $MyInvocation
-
+    
     $DotnetPackagePath = Join-Path -Path $InstallRoot -ChildPath $RelativePathToPackage | Join-Path -ChildPath $SpecificVersion
     Say-Verbose "Is-Dotnet-Package-Installed: Path to a package: $DotnetPackagePath"
     return Test-Path $DotnetPackagePath -PathType Container
@@ -316,13 +297,13 @@ function Get-Path-Prefix-With-Version($path) {
     if ($match.Success) {
         return $entry.FullName.Substring(0, $match.Index + $match.Length)
     }
-
+    
     return $null
 }
 
 function Get-List-Of-Directories-And-Versions-To-Unpack-From-Dotnet-Package([System.IO.Compression.ZipArchive]$Zip, [string]$OutPath) {
     Say-Invocation $MyInvocation
-
+    
     $ret = @()
     foreach ($entry in $Zip.Entries) {
         $dir = Get-Path-Prefix-With-Version $entry.FullName
@@ -333,12 +314,12 @@ function Get-List-Of-Directories-And-Versions-To-Unpack-From-Dotnet-Package([Sys
             }
         }
     }
-
+    
     $ret = $ret | Sort-Object | Get-Unique
-
+    
     $values = ($ret | foreach { "$_" }) -join ";"
     Say-Verbose "Directories to unpack: $values"
-
+    
     return $ret
 }
 
@@ -362,9 +343,9 @@ function Extract-Dotnet-Package([string]$ZipPath, [string]$OutPath) {
     Set-Variable -Name Zip
     try {
         $Zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
-
+        
         $DirectoriesToUnpack = Get-List-Of-Directories-And-Versions-To-Unpack-From-Dotnet-Package -Zip $Zip -OutPath $OutPath
-
+        
         foreach ($entry in $Zip.Entries) {
             $PathWithVersion = Get-Path-Prefix-With-Version $entry.FullName
             if (($PathWithVersion -eq $null) -Or ($DirectoriesToUnpack -contains $PathWithVersion)) {
@@ -402,10 +383,20 @@ function DownloadFile([Uri]$Uri, [string]$OutPath) {
     }
 }
 
-$AzureChannel = Get-Azure-Channel-From-Channel -Channel $Channel
+function Prepend-Sdk-InstallRoot-To-Path([string]$InstallRoot, [string]$BinFolderRelativePath) {
+    $BinPath = Get-Absolute-Path $(Join-Path -Path $InstallRoot -ChildPath $BinFolderRelativePath)
+    if (-Not $NoPath) {
+        Say "Adding to current process PATH: `"$BinPath`". Note: This change will not be visible if PowerShell was run as a child process."
+        $env:path = "$BinPath;" + $env:path
+    }
+    else {
+        Say "Binaries of dotnet can be found in $BinPath"
+    }
+}
+
 $CLIArchitecture = Get-CLIArchitecture-From-Architecture $Architecture
-$SpecificVersion = Get-Specific-Version-From-Version -AzureFeed $AzureFeed -AzureChannel $AzureChannel -CLIArchitecture $CLIArchitecture -Version $Version
-$DownloadLinks = Get-Download-Links -AzureFeed $AzureFeed -AzureChannel $AzureChannel -SpecificVersion $SpecificVersion -CLIArchitecture $CLIArchitecture
+$SpecificVersion = Get-Specific-Version-From-Version -AzureFeed $AzureFeed -Channel $Channel -Version $Version
+$DownloadLinks = Get-Download-Links -AzureFeed $AzureFeed -Channel $Channel -SpecificVersion $SpecificVersion -CLIArchitecture $CLIArchitecture
 
 if ($DryRun) {
     Say "Payload URLs:"
@@ -423,10 +414,17 @@ $IsSdkInstalled = Is-Dotnet-Package-Installed -InstallRoot $InstallRoot -Relativ
 Say-Verbose ".NET SDK installed? $IsSdkInstalled"
 if ($IsSdkInstalled) {
     Say ".NET SDK version $SpecificVersion is already installed."
+    Prepend-Sdk-InstallRoot-To-Path -InstallRoot $InstallRoot -BinFolderRelativePath $BinFolderRelativePath
     exit 0
 }
 
 New-Item -ItemType Directory -Force -Path $InstallRoot | Out-Null
+
+$free = Get-CimInstance -Class win32_logicaldisk | where Deviceid -eq "$((Get-Item $InstallRoot).PSDrive.Name):"
+if ($free.Freespace / 1MB -le 250 ) {
+    Say "there is not enough disk space on drive c:"
+    exit 0
+}
 
 foreach ($DownloadLink in $DownloadLinks) {
     $ZipPath = [System.IO.Path]::GetTempFileName()
@@ -439,14 +437,7 @@ foreach ($DownloadLink in $DownloadLinks) {
     Remove-Item $ZipPath
 }
 
-$BinPath = Get-Absolute-Path $(Join-Path -Path $InstallRoot -ChildPath $BinFolderRelativePath)
-if (-Not $NoPath) {
-    Say "Adding to current process PATH: `"$BinPath`". Note: This change will not be visible if PowerShell was run as a child process."
-    $env:path = "$BinPath;" + $env:path
-}
-else {
-    Say "Binaries of dotnet can be found in $BinPath"
-}
+Prepend-Sdk-InstallRoot-To-Path -InstallRoot $InstallRoot -BinFolderRelativePath $BinFolderRelativePath
 
 Say "Installation finished"
 exit 0
