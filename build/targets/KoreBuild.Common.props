@@ -11,5 +11,6 @@
     <RepositoryRoot>$([MSBuild]::EnsureTrailingSlash('$(RepositoryRoot)'))</RepositoryRoot>
     <ArtifactsDir>$(RepositoryRoot)artifacts\</ArtifactsDir>
     <BuildDir>$(ArtifactsDir)build\</BuildDir>
+    <RuntimeFrameworkVersion Condition="'$(TargetFramework)'=='netcoreapp2.0'">2.0.0-*</RuntimeFrameworkVersion>
   </PropertyGroup>
 </Project>
