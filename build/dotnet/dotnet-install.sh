@@ -549,6 +549,10 @@ download() {
     local out_path=${2:-}
 
     local failed=false
+    # Restart the request up to N times if it fails
+    local retries=3
+    # Give up after 120 seconds of retrying
+    local retry_max_time=120
     if machine_has "curl"; then
         downloadcurl $remote_path $out_path || failed=true
     elif machine_has "wget"; then
@@ -569,10 +573,6 @@ downloadcurl() {
     local out_path=${2:-}
 
     local failed=false
-    # Restart the request up to N times if it fails
-    local retries=3
-    # Give up after 120 seconds of retrying
-    local retry_max_time=120
     if [ -z "$out_path" ]; then
         curl --fail --retry $retries --retry-max-time $retry_max_time -sSL $remote_path \
              || wget -qO- $remote_path \
