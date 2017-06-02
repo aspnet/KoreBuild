@@ -98,7 +98,7 @@ build_taskproject() {
     if [[ ! -f $taskProj ]]; then
         # skipping
         return
-    }
+    fi
 
     if [[ -d $publishFolder ]]; then
         rm -rf $publishFolder
