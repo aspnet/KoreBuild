@@ -68,6 +68,22 @@ function InstallSharedRuntime([string] $version, [string] $channel)
     }
 }
 
+function BuildTaskProject {
+    $taskProj = "$repoFolder/build/tasks/RepoTasks.csproj"
+    $publishFolder = "$repoFolder/build/tasks/bin/publish/"
+
+    if (!(Test-Path $taskProj)) {
+        return
+    }
+
+    if (Test-Path $publishFolder) {
+        Remove-Item $publishFolder -Recurse -Force
+    }
+
+    __exec dotnet restore $taskProj
+    __exec dotnet publish $taskProj --configuration Release --output $publishFolder
+}
+
 $newPath = "$dotnetLocalInstallFolder;$env:PATH"
 if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 {
@@ -125,5 +141,6 @@ if (!(Test-Path $msbuildArtifactsDir))
 
 $msBuildArguments | Out-File -Encoding ASCII -FilePath $msBuildResponseFile
 
+BuildTaskProject
 __exec dotnet restore /p:PreflightRestore=true "$makeFileProj"
 __exec dotnet msbuild `@"$msBuildResponseFile"

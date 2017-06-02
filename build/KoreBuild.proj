@@ -51,6 +51,7 @@
   <Import Project="targets\KoreBuild.Common.props" />
   <Import Project="targets\KoreBuild.DefaultBuildSettings.props" Condition="'$(DisableDefaultBuildSettings)' != 'true'" />
   <Import Project="$(RepositoryRoot)build\repo.props" Condition="Exists('$(RepositoryRoot)build\repo.props')" />
+  <Import Project="$(RepositoryRoot)build\tasks\*.tasks" Condition="Exists('$(RepositoryRoot)build\tasks\')" />
 
   <Import Project="targets\KoreBuild.Common.targets" />
   <Import Project="targets\KoreBuild.SolutionItems.targets" Condition="'$(DisableDefaultItems)' != 'true'" />

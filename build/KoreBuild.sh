@@ -91,6 +91,23 @@ install_shared_runtime() {
     fi
 }
 
+build_taskproject() {
+    local taskProj="$repoFolder/build/tasks/RepoTasks.csproj"
+    local publishFolder="$repoFolder/build/tasks/bin/publish/"
+
+    if [[ ! -f $taskProj ]]; then
+        # skipping
+        return
+    }
+
+    if [[ -d $publishFolder ]]; then
+        rm -rf $publishFolder
+    fi
+
+    __exec dotnet restore $taskProj
+    __exec dotnet publish $taskProj --configuration Release --output $publishFolder
+}
+
 if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
     echo "Skipping runtime installation because KOREBUILD_SKIP_RUNTIME_INSTALL is set"
 
@@ -151,5 +168,6 @@ cat > $msbuildResponseFile <<ENDMSBUILDARGS
 ENDMSBUILDARGS
 echo -e "$msbuild_args" >> $msbuildResponseFile
 
+build_taskproject
 __exec dotnet restore /p:PreflightRestore=true /p:NetFxVersion=$netfxversion "$makeFileProj"
 __exec dotnet msbuild @"$msbuildResponseFile"
