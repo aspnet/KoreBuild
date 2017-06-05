@@ -20,4 +20,4 @@ This serves as a canary test for the scripts but may not exercise all areas of K
 This defaults to using <https://github.com/aspnet/DependencyInjection.git> as the canary.
 
 ## Replaying MSBuild binary log file to a text file
-`dotnet msbuild .\msbuild.binlog /noconlog /flp:verbosity=diag`;logfile=diagnostic.log /noautoresponse`
+dotnet msbuild .\msbuild.binlog /noconlog /flp:verbosity=diag`;logfile=diagnostic.log /noautoresponse
