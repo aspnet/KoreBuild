@@ -18,3 +18,6 @@ This script will download a repository and use the local version of KoreBuild to
 This serves as a canary test for the scripts but may not exercise all areas of KoreBuild.
 
 This defaults to using <https://github.com/aspnet/DependencyInjection.git> as the canary.
+
+## Replaying MSBuild binary log file to a text file
+`dotnet msbuild .\msbuild.binlog /noconlog /flp:verbosity=diag`;logfile=diagnostic.log /noautoresponse`
