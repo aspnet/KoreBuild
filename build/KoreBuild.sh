@@ -162,7 +162,7 @@ cat > $msbuildResponseFile <<ENDMSBUILDARGS
 /nologo
 /m
 /p:RepositoryRoot="$repoFolder/"
-/bl:"$msbuildLogFile"
+/fl /flp:verbosity=diagnostic
 /clp:Summary
 "$makeFileProj"
 ENDMSBUILDARGS
