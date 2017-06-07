@@ -129,7 +129,7 @@ $msBuildArguments = @"
 /nologo
 /m
 /p:RepositoryRoot="$repoFolder/"
-"/logger:BinaryLogger,$sdkPath/Microsoft.Build.dll:$msbuildLogFilePath"
+"/logger:BinaryLogger,$sdkPath/Microsoft.Build.dll;$msbuildLogFilePath"
 /clp:Summary
 "$makeFileProj"
 "@
