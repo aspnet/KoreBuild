@@ -152,7 +152,13 @@ export ReferenceAssemblyRoot=$NUGET_PACKAGES/netframeworkreferenceassemblies/$ne
 makeFileProj="$scriptRoot/KoreBuild.proj"
 msbuildArtifactsDir="$repoFolder/artifacts/msbuild"
 msbuildResponseFile="$msbuildArtifactsDir/msbuild.rsp"
-msbuildLogFile="$msbuildArtifactsDir/msbuild.binlog"
+msBuildLogArgument=""
+
+if [ ! -z "$KOREBUILD_ENABLE_BINARY_LOG" ]; then
+    echo "Enabling binary logging because KOREBUILD_ENABLE_BINARY_LOG is set"
+    msBuildLogFile="$msbuildArtifactsDir/msbuild.binlog"
+    msBuildLogArgument="/bl:$msBuildLogFile"
+fi
 
 if [ ! -f $msbuildArtifactsDir ]; then
     mkdir -p $msbuildArtifactsDir
@@ -162,7 +168,7 @@ cat > $msbuildResponseFile <<ENDMSBUILDARGS
 /nologo
 /m
 /p:RepositoryRoot="$repoFolder/"
-/bl:"$msbuildLogFile"
+"$msBuildLogArgument"
 /clp:Summary
 "$makeFileProj"
 ENDMSBUILDARGS
