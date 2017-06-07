@@ -103,15 +103,22 @@ if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
 
 $makeFileProj = "$PSScriptRoot/KoreBuild.proj"
 $msbuildArtifactsDir = "$repoFolder/artifacts/msbuild"
-$msbuildLogFilePath = "$msbuildArtifactsDir/msbuild.binlog"
 $msBuildResponseFile = "$msbuildArtifactsDir/msbuild.rsp"
 
+$msBuildLogArgument = ""
+
+if ($env:KOREBUILD_ENABLE_BINARY_LOG -eq "1")
+{
+    Write-Host "Enabling binary logging because KOREBUILD_ENABLE_BINARY_LOG = 1"
+    $msbuildLogFilePath = "$msbuildArtifactsDir/msbuild.binlog"
+    $msBuildLogArgument = "/bl:$msbuildLogFilePath"
+}
 
 $msBuildArguments = @"
 /nologo
 /m
 /p:RepositoryRoot="$repoFolder/"
-/bl:"$msbuildLogFilePath"
+"$msBuildLogArgument"
 /clp:Summary
 "$makeFileProj"
 "@
