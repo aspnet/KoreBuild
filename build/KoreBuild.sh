@@ -158,11 +158,14 @@ if [ ! -f $msbuildArtifactsDir ]; then
     mkdir -p $msbuildArtifactsDir
 fi
 
+# Workaround https://github.com/Microsoft/msbuild/issues/2168
+sdkPath="$(dotnet --info | grep 'Base Path:' | awk -F ':' '{print $2}' | awk '{$1=$1};1')"
+
 cat > $msbuildResponseFile <<ENDMSBUILDARGS
 /nologo
 /m
 /p:RepositoryRoot="$repoFolder/"
-/bl:"$msbuildLogFile"
+"/logger:BinaryLogger,$sdkPath/Microsoft.Build.dll;$msbuildLogFile"
 /clp:Summary
 "$makeFileProj"
 ENDMSBUILDARGS

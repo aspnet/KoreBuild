@@ -122,12 +122,14 @@ $msbuildArtifactsDir = "$repoFolder/artifacts/msbuild"
 $msbuildLogFilePath = "$msbuildArtifactsDir/msbuild.binlog"
 $msBuildResponseFile = "$msbuildArtifactsDir/msbuild.rsp"
 
+# Workaround https://github.com/Microsoft/msbuild/issues/2168
+$sdkPath = ((dotnet --info | sls 'Base Path') -split ':' | select-object -last 1).Trim()
 
 $msBuildArguments = @"
 /nologo
 /m
 /p:RepositoryRoot="$repoFolder/"
-/bl:"$msbuildLogFilePath"
+"/logger:BinaryLogger,$sdkPath/Microsoft.Build.dll;$msbuildLogFilePath"
 /clp:Summary
 "$makeFileProj"
 "@
