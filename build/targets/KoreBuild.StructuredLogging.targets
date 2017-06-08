@@ -1,0 +1,5 @@
+<Project>
+  <Target Name="GetStructuredLoggerVersion">
+    <Message Text="!StructuredLoggerVersion:$(StructuredLoggerVersion)!" Importance="high" />
+  </Target>
+</Project>

@@ -150,4 +150,20 @@ $msBuildArguments | Out-File -Encoding ASCII -FilePath $msBuildResponseFile
 
 BuildTaskProject
 __exec dotnet restore /p:PreflightRestore=true "$makeFileProj"
-__exec dotnet msbuild `@"$msBuildResponseFile"
+
+try {
+    __exec dotnet msbuild `@"$msBuildResponseFile"
+} finally {
+    # If the structured logger is enabled, replay the binary log to a structured log and remove the binary log
+    # (can't do this in MSBuild because MSBuild logs the log, for obvious reasons)
+    if ($env:KOREBUILD_WRITE_STRUCTURED_LOG -eq "true") {
+        # Open to suggestions for a cleaner way to do this...
+        $r = [regex]"!StructuredLoggerVersion:([^!]*)!"
+        $m = $r.Match((dotnet build $makeFileProj /t:GetStructuredLoggerVersion /p:DisableDefaultTargets=true))
+        $StructuredLoggerPath = "$env:USERPROFILE\.nuget\packages\microsoft.build.logging.structuredlogger\$($m.Groups[1].Value)\lib\netstandard1.5\StructuredLogger.dll"
+        $structuredLogPath = [IO.Path]::ChangeExtension($msbuildLogFilePath, ".buildlog")
+
+        Write-Host "Building structured log..."
+        __exec dotnet msbuild $msbuildLogFilePath /noconlog /logger:"StructuredLogger,$StructuredLoggerPath;$StructuredLogPath" /noautoresponse
+    }
+}
