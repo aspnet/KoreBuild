@@ -398,9 +398,9 @@ construct_download_link() {
 
     local download_link=null
     if [ "$shared_runtime" = true ]; then
-        download_link="$azure_feed/Runtime/$specific_version/dotnet-runtime-$specific_version-$osname-$normalized_architecture.tar.gz" 
+        download_link="$azure_feed/Runtime/$specific_version/dotnet-runtime-$specific_version-$osname-$normalized_architecture.tar.gz"
     else
-        download_link="$azure_feed/Sdk/$specific_version/dotnet-dev-$specific_version-$osname-$normalized_architecture.tar.gz"
+        download_link="$azure_feed/Sdk/$specific_version/dotnet-sdk-$specific_version-$osname-$normalized_architecture.tar.gz"
     fi
     
     echo "$download_link"
@@ -549,10 +549,6 @@ download() {
     local out_path=${2:-}
 
     local failed=false
-    # Restart the request up to N times if it fails
-    local retries=3
-    # Give up after 120 seconds of retrying
-    local retry_max_time=120
     if machine_has "curl"; then
         downloadcurl $remote_path $out_path || failed=true
     elif machine_has "wget"; then
@@ -574,13 +570,9 @@ downloadcurl() {
 
     local failed=false
     if [ -z "$out_path" ]; then
-        curl --fail --retry $retries --retry-max-time $retry_max_time -sSL $remote_path \
-             || wget -qO- $remote_path \
-             || failed=true
+        curl --retry 10 -sSL -f --create-dirs $remote_path || failed=true
     else
-        curl --fail --retry $retries --retry-max-time $retry_max_time -sSL -o $out_path $remote_path \
-             || wget -qO $out_path $remote_path \
-             || failed=true
+        curl --retry 10 -sSL -f --create-dirs -o $out_path $remote_path || failed=true
     fi
     if [ "$failed" = true ]; then
         say_verbose "Curl download failed"
