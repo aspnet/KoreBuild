@@ -6,6 +6,7 @@ branches:
     - release
     - dev
     - /^(.*\/)?ci-.*$/
+    - /^rel\/.*/
 environment:
   global:
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
