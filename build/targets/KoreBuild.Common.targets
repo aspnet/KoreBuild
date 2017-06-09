@@ -10,7 +10,8 @@ extending the *DependsOn property
 -->
   <PropertyGroup>
     <PrepareDependsOn></PrepareDependsOn>
-    <CompileDependsOn>Prepare;Restore</CompileDependsOn>
+    <CompileDependsOn>Prepare</CompileDependsOn>
+    <CompileDependsOn Condition="'$(NoRestore)' != 'true'">$(CompileDependsOn);Restore</CompileDependsOn>
     <PackageDependsOn>Compile</PackageDependsOn>
     <TestDependsOn>Package</TestDependsOn>
     <VerifyDependsOn>Test</VerifyDependsOn>
@@ -21,7 +22,10 @@ extending the *DependsOn property
   </PropertyGroup>
 
   <!-- Default cycle targets, in order. -->
-  <Target Name="Prepare" DependsOnTargets="$(PrepareDependsOn)" />
+  <Target Name="Prepare" DependsOnTargets="$(PrepareDependsOn)">
+    <Warning Text="Packages are not going to be restored as 'NoRestore' was set to 'true'"
+      Condition="'$(NoRestore)' == 'true'"/>
+  </Target>
   <!--    Name='Restore'. Defined in Microsoft.Common.targets -->
   <Target Name="Compile" DependsOnTargets="$(CompileDependsOn)" />
   <Target Name="Package" DependsOnTargets="$(PackageDependsOn)" />
