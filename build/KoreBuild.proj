@@ -29,7 +29,7 @@
   -->
   <ItemGroup>
     <!-- Installs general-purpose build tasks -->
-    <PackageReference Include="Internal.AspNetCore.BuildTools.Tasks" Version="1.0.0-*" />
+    <PackageReference Include="Internal.AspNetCore.BuildTools.Tasks" Version="1.0.0-rc2-15278" />
     <!--
       Optionally install .NET Framework reference assemblis into the NuGet cache. This can be used with the 'ReferenceAssemblyRoot'
       environment variable to compile for .NET Framework on xplat without installing Mono.
