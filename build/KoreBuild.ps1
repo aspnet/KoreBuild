@@ -80,8 +80,8 @@ function BuildTaskProject {
         Remove-Item $publishFolder -Recurse -Force
     }
 
-    __exec dotnet restore $taskProj
-    __exec dotnet publish $taskProj --configuration Release --output $publishFolder
+    __exec dotnet restore $taskProj "/p:RepoTasksSdkPath=$PSScriptRoot/Sdks/KoreBuild.RepoTasks/"
+    __exec dotnet publish $taskProj --configuration Release --output $publishFolder "/p:RepoTasksSdkPath=$PSScriptRoot/Sdks/KoreBuild.RepoTasks/"
 }
 
 $newPath = "$dotnetLocalInstallFolder;$env:PATH"
