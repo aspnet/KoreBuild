@@ -104,8 +104,9 @@ build_taskproject() {
         rm -rf $publishFolder
     fi
 
-    __exec dotnet restore $taskProj "/p:RepoTasksSdkPath=$scriptRoot/Sdks/KoreBuild.RepoTasks/"
-    __exec dotnet publish $taskProj --configuration Release --output $publishFolder "/p:RepoTasksSdkPath=$scriptRoot/Sdks/KoreBuild.RepoTasks/"
+    local sdkPath="/p:RepoTasksSdkPath=$scriptRoot/msbuild/KoreBuild.RepoTasks.Sdk/Sdk/"
+    __exec dotnet restore $taskProj $sdkPath
+    __exec dotnet publish $taskProj --configuration Release --output $publishFolder $sdkPath
 }
 
 if [ ! -z "$KOREBUILD_SKIP_RUNTIME_INSTALL" ]; then
