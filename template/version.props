@@ -1,8 +1,0 @@
-<!-- This file may be overwritten by automation. Only values allowed here are VersionPrefix and VersionSuffix.  -->
-<Project>
-    <PropertyGroup>
-        <!-- These values are just an example and not used in build. -->
-        <VersionPrefix>1.2.0</VersionPrefix>
-        <VersionSuffix>preview1</VersionSuffix>
-    </PropertyGroup>
-</Project>

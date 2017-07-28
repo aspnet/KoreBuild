@@ -1,6 +1,13 @@
 KoreBuild
 =========
 
+## Obsolete notice
+
+These build scripts are obsolete.
+The recommended replacements are available at https://github.com/aspnet/BuildTools.
+
+## About this repo
+
 [![Travis build status](https://img.shields.io/travis/aspnet/KoreBuild.svg?label=travis-ci&branch=dev&style=flat-square)](https://travis-ci.org/aspnet/KoreBuild/branches)
 [![AppVeyor build status](https://img.shields.io/appveyor/ci/aspnetci/KoreBuild/dev.svg?label=appveyor&style=flat-square)](https://ci.appveyor.com/project/aspnetci/KoreBuild/branch/dev)
 

@@ -4,9 +4,15 @@ set -o pipefail
 # Colors
 GREEN="\033[1;32m"
 CYAN="\033[0;36m"
+YELLOW="\033[0;33m"
 RESET="\033[0m"
 RED="\033[0;31m"
 
+echo -e "${YELLOW}"
+echo -e "WARNING:"
+echo -e "These build scripts are obsolete."
+echo -e "The recommended replacements are available at https://github.com/aspnet/BuildTools."
+echo -e "${RESET}"
 
 # functions
 

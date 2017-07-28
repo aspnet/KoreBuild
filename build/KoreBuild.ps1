@@ -2,6 +2,13 @@
 
 param([parameter(ValueFromRemainingArguments=$true)][string[]] $allparams)
 
+Write-Warning @"
+
+These build scripts are obsolete.
+The recommended replacements are available at https://github.com/aspnet/BuildTools.
+
+"@
+
 function __exec($cmd) {
     $cmdName = [IO.Path]::GetFileName($cmd)
     Write-Host -ForegroundColor Cyan "> $cmdName $args"
