@@ -63,7 +63,7 @@ else
     & "$PSScriptRoot\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
 }
     InstallSharedRuntime '1.1.1' 'release/1.1.0'
-    InstallSharedRuntime '1.0.4' 'preview'
+    InstallSharedRuntime '1.0.5' 'preview'
 if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
 {
     Write-Host "Adding $dotnetLocalInstallFolder to PATH"

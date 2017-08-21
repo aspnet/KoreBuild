@@ -91,6 +91,8 @@ else
     chmod +x $scriptRoot/dotnet/dotnet-install.sh
 
     $scriptRoot/dotnet/dotnet-install.sh --channel $KOREBUILD_DOTNET_CHANNEL --version $KOREBUILD_DOTNET_VERSION
+    install_shared_runtime '1.1.1' 'release/1.1.0'
+    install_shared_runtime '1.0.5' 'preview'
 
     # Add .NET installation directory to the path if it isn't yet included.
     [[ ":$PATH:" != *":$DOTNET_INSTALL_DIR:"* ]] && export PATH="$DOTNET_INSTALL_DIR:$PATH"
