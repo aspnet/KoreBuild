@@ -1,4 +1,4 @@
-KoreBuild
+KoreBuild - OBSOLETE
 =========
 
 ## Obsolete notice
