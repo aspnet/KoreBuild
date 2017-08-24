@@ -50,6 +50,8 @@ if ($env:KOREBUILD_SKIP_RUNTIME_INSTALL -eq "1")
 else
 {
     & "$koreBuildFolder\dotnet\dotnet-install.ps1" -Channel $dotnetChannel -Version $dotnetVersion -Architecture x64
+
+    InstallSharedRuntime $sharedRuntimeVersion $dotnetChannel
 }
 if (!($env:Path.Split(';') -icontains $dotnetLocalInstallFolder))
 {
